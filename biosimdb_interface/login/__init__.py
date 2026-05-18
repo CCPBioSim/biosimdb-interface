@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from flask import Blueprint
 
-bp = Blueprint('login', __name__)
+bp = Blueprint("login", __name__)
 
-from . import login
+from . import login  # noqa: E402, F401

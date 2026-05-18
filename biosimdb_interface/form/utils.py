@@ -47,7 +47,9 @@ def _set_nested(d, parts, value):
         d.setdefault(key, [])
         while len(d[key]) <= idx:
             d[key].append({})
-        _set_nested(d[key][idx], parts[2:], value) if len(parts) > 2 else d[key].__setitem__(idx, value)
+        _set_nested(d[key][idx], parts[2:], value) if len(parts) > 2 else d[
+            key
+        ].__setitem__(idx, value)
     else:
         d.setdefault(key, {})
         _set_nested(d[key], parts[1:], value)
@@ -106,29 +108,29 @@ def form_to_json(form):
     typehint_map = _get_typehint_map()
     data = {}
     for key, value in form.items():
-        if key in ('save', 'submit'):
+        if key in ("save", "submit"):
             continue
-        parts = re.findall(r'\w+', key)
-        if not parts or 'TEMPLATE' in parts:
+        parts = re.findall(r"\w+", key)
+        if not parts or "TEMPLATE" in parts:
             continue
-        if parts[-1] == 'vector_value' and isinstance(value, str) and value:
-            value = [float(x.strip()) for x in value.split(',') if x.strip()]
+        if parts[-1] == "vector_value" and isinstance(value, str) and value:
+            value = [float(x.strip()) for x in value.split(",") if x.strip()]
         else:
             # build a schema-lookup key replacing numeric indices with '*'
-            lookup = tuple(p if not p.isdigit() else '*' for p in parts)
+            lookup = tuple(p if not p.isdigit() else "*" for p in parts)
             typehint = typehint_map.get(lookup) or typehint_map.get(tuple(parts))
-            if value != '' and typehint:
-                if typehint == 'integer':
+            if value != "" and typehint:
+                if typehint == "integer":
                     try:
                         value = int(value)
                     except (ValueError, TypeError):
                         pass
-                elif typehint == 'float':
+                elif typehint == "float":
                     try:
                         value = float(value)
                     except (ValueError, TypeError):
                         pass
-                elif typehint == 'boolean':
+                elif typehint == "boolean":
                     value = bool(value)
         _set_nested(data, parts, value)
     return data
@@ -153,9 +155,9 @@ def remove_empty_fields(d):
                 cleaned[k] = v
         elif isinstance(v, list):
             v = [remove_empty_fields(i) for i in v]
-            v = [i for i in v if i not in (None, '', {}, [])]
+            v = [i for i in v if i not in (None, "", {}, [])]
             if v:
                 cleaned[k] = v
-        elif v not in (None, ''):
+        elif v not in (None, ""):
             cleaned[k] = v
     return cleaned

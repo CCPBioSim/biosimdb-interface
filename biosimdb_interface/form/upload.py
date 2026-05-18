@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-import os
 import glob
 import json
+import os
 import tempfile
+
+from flask import current_app, request, session
 from werkzeug.utils import secure_filename
 
-from flask import session, current_app, request
-
 from .invenio import run_record_upload
-from .utils import form_to_json, fill_invenio_metadata
+from .utils import fill_invenio_metadata, form_to_json
 
 
 def _data_collections_upload(metadata_path, files_path):
@@ -23,9 +23,14 @@ def _data_collections_upload(metadata_path, files_path):
         tuple: (repository, draft_id) from the Invenio upload response.
     """
     token = session.get("access_token")
-    API_BASE = current_app.config['API_BASE']
+    API_BASE = current_app.config["API_BASE"]
     repository, draft_id = run_record_upload(
-        api_url=API_BASE, api_key=token, metadata_path=metadata_path, metadata_format="json", files=files_path, community="biosimdb",
+        api_url=API_BASE,
+        api_key=token,
+        metadata_path=metadata_path,
+        metadata_format="json",
+        files=files_path,
+        community="biosimdb",
     )
     return repository, draft_id
 
@@ -41,13 +46,16 @@ def prepare_for_invenio(form_data, tmpdir):
         draft_id: The Invenio draft record ID of the created upload.
     """
     import shutil
+
     try:
         json_form = form_to_json(form_data)
         invenio_data = fill_invenio_metadata(json_form)
         metadata_path = os.path.join(tmpdir, "metadata.json")
         with open(metadata_path, "w") as f:
             json.dump(invenio_data, f, indent=2)
-        file_paths = [p for p in glob.glob(os.path.join(tmpdir, "*")) if p != metadata_path]
+        file_paths = [
+            p for p in glob.glob(os.path.join(tmpdir, "*")) if p != metadata_path
+        ]
         _, draft_id = _data_collections_upload(metadata_path, file_paths)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)

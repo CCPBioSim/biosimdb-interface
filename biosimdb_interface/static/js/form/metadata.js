@@ -1,7 +1,7 @@
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('extract-metadata-btn')) {
         // if (e.target.disabled) return; // Prevent double clicks
-        
+
         e.target.disabled = true;
 
         // Add a wait spinner and grey out background page when data extraction is happening
@@ -15,18 +15,18 @@ document.addEventListener('click', function(e) {
         e.target.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Extracting...';
         setFieldsDisabled(true);
         const formData = new FormData();
-        
+
         // Get uploaded files
         const topology = document.querySelector(`input[name="topology"]`).files[0];
         const trajectories = document.querySelectorAll(`input[name="trajectory[]"]`);
-        
+
         formData.append(`topology`, topology);
         trajectories.forEach(input => {
             Array.from(input.files).forEach(file => {
                 formData.append(`trajectory[]`, file);
             });
         });
-        
+
         fetch('/extract_metadata', {
             method: 'POST',
             body: formData
@@ -95,25 +95,25 @@ document.addEventListener('click', function(e) {
                 alert(`Maximum of ${max} entries allowed.`);
                 return;
         }
-        
+
         const newInstance = template.cloneNode(true);
         newInstance.className = 'field-instance mb-4';
         newInstance.style.display = 'block';
         newInstance.querySelector('.instance-number').textContent = newIndex;
-        
+
         newInstance.querySelectorAll('input, select, textarea').forEach(input => {
             input.name = input.name.replace('[TEMPLATE]', `[${newIndex}]`);
             input.value = '';
         });
-        
+
         container.insertBefore(newInstance, e.target);
         renumberInstances(container);
     }
-    
+
     if (e.target.classList.contains('remove-instance')) {
         const container = e.target.closest('.multiple-field-container');
         const instances = container.querySelectorAll('.field-instance');
-        
+
         if (instances.length > 1) {
             e.target.closest('.field-instance').remove();
             renumberInstances(container);
@@ -151,7 +151,7 @@ document.addEventListener('click', function(e) {
 
         setFieldsDisabled(true);
         sessionStorage.removeItem('extractedMetadata');
-        sessionStorage.removeItem('formState');   
+        sessionStorage.removeItem('formState');
     }
 
 });
@@ -222,11 +222,11 @@ function renumberInstances(container) {
     const instances = container.querySelectorAll('.field-instance');
     instances.forEach((instance, index) => {
         const newIndex = index + 1;
-        
+
         // Update header text
         const header = instance.querySelector('h6');
         header.textContent = header.textContent.replace(/\d+/, newIndex);
-        
+
         // Update input names
         instance.querySelectorAll('input, select, textarea').forEach(input => {
             input.name = input.name.replace(/\[(\d+)\]/, `[${newIndex}]`);

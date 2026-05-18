@@ -1,39 +1,46 @@
 #!/usr/bin/env python
 import os
-from . import form_bp
-from flask import jsonify, request
 import tempfile
 
 from biosim_extractor.schema.populateschema import SchemaPopulator
+from flask import jsonify, request
+
+from . import form_bp
+
 
 @form_bp.route("/extract_metadata", methods=["POST"])
 def extract_metadata():
     try:
         print("=== DEBUG: Starting extract_metadata ===")
 
-        topology = request.files.get(f"topology")
-        trajectories = request.files.getlist(f"trajectory[]")
-        
+        topology = request.files.get("topology")
+        trajectories = request.files.getlist("trajectory[]")
+
         print(f"Topology: {topology}")
         print(f"Trajectories: {trajectories}")
-        
+
         if not topology or not trajectories:
             return jsonify({"error": "Simulation files are missing."}), 400
-        
+
         print("Creating temp files...")
-        
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(topology.filename)[1]) as topo_file, \
-             tempfile.TemporaryDirectory() as temp_dir:
-            
+
+        with (
+            tempfile.NamedTemporaryFile(
+                suffix=os.path.splitext(topology.filename)[1]
+            ) as topo_file,
+            tempfile.TemporaryDirectory() as temp_dir,
+        ):
             topology.save(topo_file.name)
             traj_files = []
-            
+
             for traj in trajectories:
                 traj_path = os.path.join(temp_dir, traj.filename)
                 traj.save(traj_path)
                 traj_files.append(traj_path)
 
-            print(f"Saved files - Topology: {topo_file.name}, Trajectories: {traj_files}")
+            print(
+                f"Saved files - Topology: {topo_file.name}, Trajectories: {traj_files}"
+            )
 
             print("Creating SchemaPopulator...")
             populator = SchemaPopulator(
@@ -41,7 +48,7 @@ def extract_metadata():
                 top_file=topo_file.name,
                 traj_file=traj_files,
             )
-            
+
             print("Calling populate()...")
             result = populator.populate()
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
@@ -56,18 +63,23 @@ def extract_metadata():
             print(f"Result: {result}")
 
             if len(validation_errors) > 0:
-                return jsonify({
-                    "simulation_metadata": result,
-                    "validation_errors": validation_errors,
-                })
+                return jsonify(
+                    {
+                        "simulation_metadata": result,
+                        "validation_errors": validation_errors,
+                    }
+                )
             else:
-                return jsonify({
-                    "simulation_metadata": result,
-                    "message": "Metadata extracted successfully.",
-                })   
-            
+                return jsonify(
+                    {
+                        "simulation_metadata": result,
+                        "message": "Metadata extracted successfully.",
+                    }
+                )
+
     except Exception as e:
         print(f"ERROR: {e}")
         import traceback
+
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500

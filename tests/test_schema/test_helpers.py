@@ -1,6 +1,10 @@
-import json, tempfile, os
+import json
+import os
+import tempfile
 from unittest.mock import patch
+
 from biosimdb_interface.schema.helpers import SchemaPopulator
+
 
 def test_load_schema_from_file():
     data = {"key": "value"}
@@ -14,6 +18,7 @@ def test_load_schema_from_file():
     finally:
         os.unlink(path)
 
+
 def test_main_prints_schema(capsys):
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump({"a": 1}, f)
@@ -21,11 +26,13 @@ def test_main_prints_schema(capsys):
     try:
         with patch("sys.argv", ["helpers.py", path]):
             from biosimdb_interface.schema.helpers import main
+
             main()
         captured = capsys.readouterr()
         assert '"a": 1' in captured.out
     finally:
         os.unlink(path)
+
 
 def test_main_writes_output_file():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -35,6 +42,7 @@ def test_main_writes_output_file():
     try:
         with patch("sys.argv", ["helpers.py", in_path, "--output", out_path]):
             from biosimdb_interface.schema.helpers import main
+
             main()
         with open(out_path) as f:
             assert json.load(f) == {"b": 2}

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
+import glob
 from collections.abc import Iterable
 from pathlib import Path
-import glob
 
 from data_collections_api.dumpers import Formats, get_loader
 from data_collections_api.invenio import InvenioRepository
-from data_collections_api.metadata import validate_metadata
 
 
 def create_files_dict(all_files: Iterable[Path | str]) -> dict[str, Path]:
@@ -79,7 +78,7 @@ def run_record_upload(
 
     draft_id = None
 
-    #validate_metadata(data)
+    # validate_metadata(data)
 
     # convert list of file paths to a dictionary
     files_dict = create_files_dict(files)

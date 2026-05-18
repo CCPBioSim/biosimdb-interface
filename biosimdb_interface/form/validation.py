@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-from flask import request
-import tempfile
-from werkzeug.utils import secure_filename
 import os
-from MDAnalysis import Universe
 import shutil
+import tempfile
+
+from flask import request
+from MDAnalysis import Universe
+from werkzeug.utils import secure_filename
+
 
 def validate_with_mdanalysis():
     """Validate uploaded topology and trajectory files using MDAnalysis.
@@ -21,8 +23,10 @@ def validate_with_mdanalysis():
     topology = request.files.get("topology")
     trajectories = [f for f in request.files.getlist("trajectory[]") if f.filename]
     if not topology or not topology.filename or len(trajectories) == 0:
-        return "Please upload a topology and trajectory files before saving or submitting."
-        # return None  # no files uploaded, skip validation
+        return (
+            "Please upload a topology and trajectory files before saving or submitting."
+        )
+        # return None  # no files uploaded, skip validation
     tmpdir = tempfile.mkdtemp()
     try:
         top_path = os.path.join(tmpdir, secure_filename(topology.filename))

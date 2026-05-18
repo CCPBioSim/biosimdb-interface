@@ -41,14 +41,14 @@ h3, h1, th, b {
     color: #B94A48;
   }
 
-/* Allow rows of table to be clicakble */  
+/* Allow rows of table to be clicakble */
 .clickable:hover {
     background: var(--hover-color);
     cursor: pointer;
 }
 
 
-/* Truncate text over multiple lines */ 
+/* Truncate text over multiple lines */
 .multi-line {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -76,7 +76,7 @@ th, td {
   }
 
 
-  .scrollx { 
+  .scrollx {
     height: 40px;
     max-width: 500px;
     overflow-x: scroll;

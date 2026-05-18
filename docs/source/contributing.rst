@@ -19,7 +19,7 @@ dependency groups::
 Running the tests
 -----------------
 
-Tests use `pytest` and are located in the ``tests/`` directory::
+Tests use ``pytest`` and are located in the ``tests/`` directory::
 
    pytest
 
@@ -30,14 +30,35 @@ To see a coverage report::
 Linting and formatting
 ----------------------
 
-The project uses `ruff` for linting and formatting::
+The project uses ``ruff`` for linting and formatting::
 
    ruff check .
    ruff format .
 
-To run checks automatically on each commit, install the pre-commit hooks::
+Pre-commit hooks
+----------------
+
+Pre-commit hooks run ``ruff``, ``pyupgrade``, and several file-hygiene checks
+automatically before each commit. To install them::
 
    pre-commit install
+
+To run all hooks manually across the whole codebase::
+
+   pre-commit run --all-files
+
+Hook versions are pinned in ``.pre-commit-config.yaml`` at the repository root.
+
+Continuous integration
+----------------------
+
+CI runs automatically on every push to ``main`` via GitHub Actions
+(``.github/workflows/ci.yaml``). The following jobs must pass before merging:
+
+- **Lint** — ``ruff check`` and ``ruff format --check``
+- **Tests** — ``pytest`` on Python 3.12 and 3.13
+- **Docs** — Sphinx HTML build with warnings treated as errors
+- **Pre-commit** — all pre-commit hooks across all files
 
 Building the documentation
 --------------------------
@@ -63,5 +84,5 @@ Submitting changes
 
 1. Create a branch from ``main`` for your change.
 2. Make your changes and add tests where appropriate.
-3. Ensure ``pytest`` and ``ruff check .`` both pass.
+3. Ensure all CI jobs pass locally: ``pytest``, ``ruff check .``, and ``pre-commit run --all-files``.
 4. Open a pull request against ``main`` with a clear description of the change.

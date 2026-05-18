@@ -1,0 +1,14 @@
+services:
+  biosimdb-interface:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5002"
+    env_file:
+      - ../biosimdb_interface/.env
+    volumes:
+      # Mount schema files from host — avoids baking local paths into the image
+      - type: bind
+        source: ../../biosim-schema
+        target: /biosim-schema

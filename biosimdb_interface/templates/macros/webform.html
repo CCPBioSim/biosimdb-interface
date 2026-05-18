@@ -1,3 +1,36 @@
+{#
+  webform.html
+  Main simulation metadata extraction and submission form.
+
+  Extends: main/base.html
+  Macros: macros/webform.html (render_fields, render_files, render_metadata,
+          render_simulation_metadata, render_guidance, render_simulation_modal)
+
+  Context variables:
+    schema (dict):    Ordered dict of form sections, each containing:
+                        title (str), description (str), guidance (str, optional),
+                        files, fields, metadata, simulation_metadata (optional subsections)
+    BASE_URL (str):   Base URL of the BioSimDB instance, used for the community link.
+    session (dict):   Flask session; checked for 'access_token' to show login/logout button.
+
+  Behaviour:
+    - Renders one card per schema section with file uploads, fields, and metadata subsections.
+    - Save button (name="save") triggers a JSON dry-run via fetch and downloads metadata as JSON.
+    - Submit button (name="submit") validates then posts to BioSimDB; redirects to login if needed.
+    - Form state and extracted metadata are persisted in sessionStorage via metadata.js.
+    - Fields are disabled until metadata is extracted; Bootstrap popovers explain this on click.
+#}
+
+
+{#
+  Renders a group of form fields within a Bootstrap row.
+  Handles value/unit pair ordering, nested fields (recursive), repeatable fields,
+  conditional visibility, and inline validation errors.
+
+  Args:
+    fields (dict):     Mapping of field_name → field definition from the webform schema.
+    group_name (str):  Bracket-notation prefix for input name attributes (e.g. "simulation").
+#}
 {% macro render_fields(fields, group_name) %}
 <div class="row g-3 align-items-end">
 
@@ -111,6 +144,12 @@
 </div>
 {% endmacro %}
 
+{#
+  Renders a read-only guidance box with a bold label and bulleted list of options.
+
+  Args:
+    field (dict): Field definition with `label` (str) and `options` (list of str).
+#}
 {% macro render_guidance(field) %}
 <div class="guidance-box mb-3">
     <strong>{{ field.label }}</strong>
@@ -122,6 +161,13 @@
 </div>
 {% endmacro %}
 
+{#
+  Renders file upload inputs for topology and trajectory files,
+  followed by "Extract Metadata" and "Clear All" action buttons.
+
+  Args:
+    files (dict): Mapping of file_key → file definition (label, required, multiple).
+#}
 {% macro render_files(files) %}
 <!-- <h5 class="entry-number">Entry</h5> -->
 <div class="row">
@@ -148,6 +194,12 @@
 </button>
 {% endmacro %}
 
+{#
+  Renders all metadata field groups inside a single collapsible Bootstrap accordion.
+
+  Args:
+    metadata (dict): Mapping of section_key → field group, as returned by the webform schema.
+#}
 {% macro render_metadata(metadata) %}
 <div class="accordion mt-3 metadata-accordion">
     <div class="accordion-item">
@@ -172,7 +224,15 @@
 </div>
 {% endmacro %}
 
+{#
+  Renders simulation metadata sections with a sticky top navigation bar of anchor links
+  and individual bordered section panels. Supports flat fields, nested groups,
+  and repeatable instances (e.g. molecule_ID entries).
 
+  Args:
+    simulation_metadata (dict): Ordered mapping of section_key → section definition,
+                                each with a `label` and `fields` dict.
+#}
 {% macro render_simulation_metadata(simulation_metadata) %}
 <nav class="mb-3 mt-3 sticky-top bg-white border-bottom py-2" style="z-index: 1025;">
     <h5 class="text-center mb-2">Simulation Metadata</h5>

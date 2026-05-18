@@ -37,8 +37,6 @@ def webform():
         mda_error = validate_with_mdanalysis()
         if mda_error:
             return jsonify({"validation_errors": [mda_error]})
-            # flash(f"MDAnalysis could not read the uploaded files: {mda_error}", "danger")
-            # return render_template("form/webform.html", schema=WEBFORM_SCHEMA, form_data=request.form, errors={})
 
         action = (
             "save"
@@ -49,12 +47,9 @@ def webform():
         )
 
         if action in ["save", "submit"]:
-            print("!!!")
             # include file info in output, ro-crate?
             json_form = form_to_json(request.form)
             json_form = remove_empty_fields(json_form)
-            print("JSON FORM:")
-            print(json_form)
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
 
             validation_errors = []
@@ -62,8 +57,6 @@ def webform():
                 validate_metadata(json_form, biosimschema_path, strict=True)
             except ValueError as e:
                 validation_errors = str(e).splitlines()
-
-            print(">>", validation_errors)
 
             if validation_errors:
                 return jsonify(

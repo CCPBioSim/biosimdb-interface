@@ -1,3 +1,14 @@
+{#
+  submit_success.html
+  Shown after a successful BioSimDB record submission.
+
+  Context variables:
+    record_url (str): URL of the newly created BioSimDB record.
+
+  Behaviour:
+    - Counts down 10 seconds then redirects to record_url in the same tab.
+    - "View Record" button opens record_url immediately and cancels the countdown.
+#}
 {% extends "main/base.html" %}
 {% block content %}
 <div class="container text-center mt-5">

@@ -1,3 +1,25 @@
+{#
+  webform.html
+  Main simulation metadata extraction and submission form.
+
+  Extends: main/base.html
+  Macros: macros/webform.html (render_fields, render_files, render_metadata,
+          render_simulation_metadata, render_guidance, render_simulation_modal)
+
+  Context variables:
+    schema (dict):    Ordered dict of form sections, each containing:
+                        title (str), description (str), guidance (str, optional),
+                        files, fields, metadata, simulation_metadata (optional subsections)
+    BASE_URL (str):   Base URL of the BioSimDB instance, used for the community link.
+    session (dict):   Flask session; checked for 'access_token' to show login/logout button.
+
+  Behaviour:
+    - Renders one card per schema section with file uploads, fields, and metadata subsections.
+    - Save button (name="save") triggers a JSON dry-run via fetch and downloads metadata as JSON.
+    - Submit button (name="submit") validates then posts to BioSimDB; redirects to login if needed.
+    - Form state and extracted metadata are persisted in sessionStorage via metadata.js.
+    - Fields are disabled until metadata is extracted; Bootstrap popovers explain this on click.
+#}
 {% extends "main/base.html" %}
 
 {% from "macros/webform.html" import render_fields, render_files, render_metadata, render_simulation_metadata, render_guidance, render_simulation_modal with context %}

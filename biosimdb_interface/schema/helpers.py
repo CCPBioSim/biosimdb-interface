@@ -8,6 +8,14 @@ import json
 
 
 def load_schema(self):
+    """Load schema JSON from a URL or local file path into ``self.schema``.
+
+    Args:
+        self: Object with ``schema_path`` (str) attribute.
+
+    Returns:
+        dict: Parsed JSON schema.
+    """
     if self.schema_path.startswith("http://") or self.schema_path.startswith(
         "https://"
     ):
@@ -27,10 +35,21 @@ def load_schema(self):
 
 
 class SchemaPopulator:
+    """Loads a webform schema from a local JSON file."""
+
     def __init__(self, schema_path=None):
+        """
+        Args:
+            schema_path (str, optional): Path to the schema JSON file.
+        """
         self.schema_path = schema_path
 
     def load_schema(self):
+        """Load the schema JSON file into ``self.schema``.
+
+        Returns:
+            dict: Parsed JSON schema.
+        """
         with open(self.schema_path) as f:
             self.schema = json.load(f)
             return self.schema
@@ -42,6 +61,12 @@ class SchemaPopulator:
 
 
 def parse_args():
+    """Parse command-line arguments.
+
+    Returns:
+        argparse.Namespace: Parsed arguments with ``schema`` (str) and
+        optional ``output`` (str).
+    """
     parser = argparse.ArgumentParser(description="Read in webform schema")
 
     # Required arguments
@@ -54,6 +79,7 @@ def parse_args():
 
 
 def main():
+    """Entry point: load a schema JSON file and print or write the result."""
     args = parse_args()
 
     populator = SchemaPopulator(

@@ -1,3 +1,4 @@
+// Handle click events for extract, save, submit, add/remove molecule instances, and clear
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('extract-metadata-btn')) {
         // if (e.target.disabled) return; // Prevent double clicks
@@ -156,7 +157,10 @@ document.addEventListener('click', function(e) {
 
 });
 
-
+/**
+ * Populates form fields from extracted simulation metadata.
+ * @param {Object} metadata - Nested metadata object keyed by section then field name.
+ */
 function populateFields(metadata) {
     Object.entries(metadata).forEach(([section, sectionData]) => {
         Object.entries(sectionData).forEach(([fieldName, fieldValue]) => {
@@ -217,7 +221,11 @@ function populateFields(metadata) {
 }
 
 
-// Used for molecule ID numbering
+/**
+ * Renumbers all field instances within a repeatable container after add/remove.
+ * Updates both the visible header text and the `name` attributes of all inputs.
+ * @param {HTMLElement} container - The `.multiple-field-container` element to renumber.
+ */
 function renumberInstances(container) {
     const instances = container.querySelectorAll('.field-instance');
     instances.forEach((instance, index) => {
@@ -234,7 +242,12 @@ function renumberInstances(container) {
     });
 }
 
-
+/**
+ * Recursively sets form field values from a nested object using bracket-notation paths.
+ * Primitive arrays (e.g. vectors) are joined as comma-separated strings.
+ * @param {string} basePath - Bracket-notation path prefix (e.g. `"simulation[box_vectors]"`).
+ * @param {Object} obj - Object whose entries map to form field name suffixes and values.
+ */
 function setNestedFields(basePath, obj) {
     Object.entries(obj).forEach(([key, val]) => {
         const path = `${basePath}[${key}]`;
@@ -256,7 +269,12 @@ function setNestedFields(basePath, obj) {
     });
 }
 
-// disable fields
+/**
+ * Enables or disables all editable form fields and adds/removes click-blocking overlays.
+ * When disabled, an overlay with a Bootstrap popover is added to each `.field-container`
+ * to prompt the user to extract metadata first.
+ * @param {boolean} disabled - `true` to disable fields and add overlays; `false` to re-enable.
+ */
 function setFieldsDisabled(disabled) {
     document.querySelectorAll('#simulationForm input, #simulationForm select, #simulationForm textarea').forEach(el => {
         const type = (el.type || '').toLowerCase();
@@ -294,7 +312,10 @@ function setFieldsDisabled(disabled) {
     }
 }
 
-// save manually filled in sub-fields upon refreshing
+/**
+ * Persists current form field values to sessionStorage so they survive page refreshes.
+ * Excludes file, button, submit, and hidden inputs.
+ */
 function saveFormState() {
     const state = {};
     document.querySelectorAll('#simulationForm input, #simulationForm select, #simulationForm textarea').forEach(el => {
@@ -305,7 +326,10 @@ function saveFormState() {
     sessionStorage.setItem('formState', JSON.stringify(state));
 }
 
-// restore manually filled in sub-fields upon refreshing
+/**
+ * Restores form field values from sessionStorage.
+ * Skips submit and hidden inputs to avoid overwriting button labels or CSRF tokens.
+ */
 function restoreFormState() {
     const saved = sessionStorage.getItem('formState');
     if (!saved) return;
@@ -318,7 +342,8 @@ function restoreFormState() {
     });
 }
 
-// check whether any fields are already populated before disabling
+// On page load: restore extracted metadata and form state from sessionStorage,
+// or disable fields if the form is empty.
 document.addEventListener('DOMContentLoaded', () => {
     const saved = sessionStorage.getItem('extractedMetadata');
     if (saved) {
@@ -337,13 +362,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasValues) setFieldsDisabled(true);
 });
 
+// Persist form state on any user input so it survives page refreshes.
 document.addEventListener('input', function(e) {
     if (e.target.closest('#simulationForm') && e.target.type !== 'file') saveFormState();
 });
+// Persist form state on any user input so it survives page refreshes.
 document.addEventListener('change', function(e) {
     if (e.target.closest('#simulationForm') && e.target.type !== 'file') saveFormState();
 });
 
+/**
+ * Shows a dismissible Bootstrap alert fixed at the top of the page.
+ * @param {string} html - HTML content for the alert body.
+ * @param {string} [type='warning'] - Bootstrap alert variant (e.g. 'warning', 'danger', 'success').
+ * @param {number} [timeout=50000] - Auto-dismiss delay in milliseconds. Pass 0 to disable.
+ */
 function showAlert(html, type = 'warning', timeout = 50000) {
     const alertEl = document.createElement('div');
     alertEl.className = `alert alert-${type} alert-dismissible fade show`;
@@ -358,7 +391,12 @@ function showAlert(html, type = 'warning', timeout = 50000) {
     }
 }
 
-
+/**
+ * Guards save/submit actions by checking that metadata has been extracted.
+ * Uses native browser validation UI (`reportValidity`) to surface the error on the topology input.
+ * @param {HTMLFormElement} form - The simulation form element.
+ * @returns {boolean} `true` if extraction has been performed; `false` otherwise.
+ */
 function requireExtraction(form) {
     if (!sessionStorage.getItem('extractedMetadata')) {
         const topologyInput = document.querySelector('input[name="topology"]');
@@ -370,6 +408,12 @@ function requireExtraction(form) {
     return true;
 }
 
+/**
+ * Validates the form by posting to `/webform` with a dry-run `save` flag,
+ * then calls `onSuccess` if validation passes or displays errors as an alert.
+ * @param {HTMLFormElement} form - The simulation form element.
+ * @param {function} onSuccess - Callback invoked with the server response data on success.
+ */
 function validateAndSubmit(form, onSuccess) {
     const formData = new FormData(form);
     formData.append('save', '1');

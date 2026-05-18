@@ -13,6 +13,11 @@ from . import bp
 def authz_url() -> str:
     """
     Build the OAuth2 authorization URL with a secure random state parameter.
+
+    Stores the state in the session for later verification in the callback.
+
+    Returns:
+        str: The full authorization URL to redirect the user to.
     """
     state = secrets.token_urlsafe(32)  # secure random string
     session["oauth_state"] = state  # store in session
@@ -28,7 +33,11 @@ def authz_url() -> str:
 
 @bp.route("/login")
 def login():
-    """Redirect the user to the OAuth2 authorization endpoint."""
+    """
+    Redirect the user to the OAuth2 authorization endpoint.
+
+    Clears any previous error from the session before initiating the flow.
+    """
     session.pop("last_error", None)
     url = authz_url()
     return redirect(url)
@@ -37,7 +46,13 @@ def login():
 @bp.route("/callback")
 def callback():
     """
-    Handle the OAuth2 callback, exchange the code for an access token, and redirect.
+    Handle the OAuth2 callback from the authorization server.
+
+    Verifies the state parameter, exchanges the authorization code for an
+    access token, and redirects to the post-login URL or the webform.
+
+    Returns:
+        Response: Redirect to the next URL on success, or the webform on failure.
     """
     # make sure state returned is the same that was originally provided
     returned_state = request.args.get("state")
@@ -80,11 +95,21 @@ def callback():
 
 @bp.route("/logout")
 def logout():
-    """Clear the access token from the session and redirect to the webform."""
+    """
+    Clear the access token from the session and redirect to the webform.
+
+    Returns:
+        Response: Redirect to the webform.
+    """
     session.pop("access_token", None)
     return redirect(url_for("form.webform"))
 
 
 def is_logged_in():
-    """Return True if the user has an active access token in the session."""
+    """
+    Check whether the user has an active access token in the session.
+
+    Returns:
+        bool: True if the user is logged in, False otherwise.
+    """
     return "access_token" in session

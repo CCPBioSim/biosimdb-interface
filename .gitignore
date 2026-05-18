@@ -177,3 +177,6 @@ docs/build/
 #tests
 .system*
 .DS_Store
+
+#scripts
+run_commands.sh

@@ -63,8 +63,14 @@ def prepare_for_invenio(form_data, tmpdir):
 
 
 def save_pending_submission():
-    """
-    Save uploaded files and form data to a temp directory for post-login submission.
+    """Save uploaded files and form data to a temp directory for post-login submission.
+
+    Stores uploaded files in a new temporary directory and saves the form data and
+    directory path in the Flask session so the submission can be resumed after OAuth login.
+
+    Side effects:
+        session["pending_form_data"]: Set to the submitted form data as a dict.
+        session["pending_files_dir"]: Set to the path of the temporary directory.
     """
     tmpdir = tempfile.mkdtemp(prefix="biosimdb_pending_")
     for field in request.files:

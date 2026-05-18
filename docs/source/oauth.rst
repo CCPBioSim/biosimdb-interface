@@ -33,7 +33,7 @@ Add the values to your ``biosimdb_interface/.env`` file::
 
    CLIENT_ID=your_client_id
    CLIENT_SECRET=your_client_secret
-   BASE_URL=https://data-collections-staging.psdi.ac.uk
+   BASE_URL=https://data-collections.psdi.ac.uk
    REDIRECT_URI=http://127.0.0.1:5002/callback
 
 .. warning::

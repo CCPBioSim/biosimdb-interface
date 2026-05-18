@@ -109,6 +109,8 @@ document.addEventListener('click', function(e) {
 
         container.insertBefore(newInstance, e.target);
         renumberInstances(container);
+        // Initialise popovers on the newly cloned instance
+        newInstance.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => new bootstrap.Popover(el));
     }
 
     if (e.target.classList.contains('remove-instance')) {
@@ -189,6 +191,8 @@ function populateFields(metadata) {
                         el.name = el.name.replace('[TEMPLATE]', `[${i + 1}]`);
                     });
                     container.insertBefore(inst, container.querySelector('.add-instance'));
+                    // Initialise popovers on dynamically added instances
+                    inst.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => new bootstrap.Popover(el));
                     setNestedFields(`${section}[${fieldName}][${i + 1}]`, item);
 
                     // Restore snapshot for fields extraction left empty

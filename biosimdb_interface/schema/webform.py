@@ -1,17 +1,45 @@
 #!/usr/bin/env python3
 """
-Read in schema for webform fields and save to python object.
+Webform schema definition for the BioSim metadata submission form.
+
+Loads the simulation metadata schema from ``WEBFORM_SCHEMA_PATH`` (set via
+environment variable) and exposes it as part of :data:`WEBFORM_SCHEMA`, which
+drives the rendered HTML form fields.
+
+The schema is cached in memory and reloaded automatically when the source file
+changes (detected via modification time), so server restarts are not required
+after schema updates.
 """
 
 import os
 
 from biosimdb_interface.schema.helpers import SchemaPopulator
 
-schema_path = os.getenv("WEBFORM_SCHEMA_PATH", "")
-populator = SchemaPopulator(schema_path=schema_path)
-simulation_metadata = populator.load_schema()
+# Module-level cache for the simulation metadata schema.
+# Reloaded automatically when the source file's modification time changes.
+_cache = {"schema": None, "mtime": None}
 
 
+def get_simulation_metadata():
+    """Return the simulation metadata schema, reloading from disk if the file has changed.
+
+    Compares the current modification time of ``WEBFORM_SCHEMA_PATH`` against the
+    cached value. If the file has been modified since the last load, the schema is
+    re-read before returning.
+
+    Returns:
+        dict: Parsed simulation metadata schema.
+    """
+    path = os.getenv("WEBFORM_SCHEMA_PATH", "")
+    mtime = os.path.getmtime(path)
+    if _cache["mtime"] != mtime:
+        _cache["schema"] = SchemaPopulator(schema_path=path).load_schema()
+        _cache["mtime"] = mtime
+    return _cache["schema"]
+
+
+# Top-level webform schema object passed to the Jinja2 template.
+# ``simulation_metadata`` is loaded fresh on first access via get_simulation_metadata().
 WEBFORM_SCHEMA = {
     "data": {
         "title": "BioSim Data Extraction & Submission Form",
@@ -45,6 +73,5 @@ WEBFORM_SCHEMA = {
                 "multiple": False,
             },
         },
-        "simulation_metadata": simulation_metadata,
     }
 }

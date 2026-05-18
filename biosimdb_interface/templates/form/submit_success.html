@@ -1,0 +1,26 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="container text-center mt-5">
+    <p class="text-success fw-semibold">BioSimDB record created successfully! Please complete your submission there.</p>
+    <p class="text-muted">Redirecting to your record in <span id="countdown">10</span> seconds...</p>
+    <a href="{{ record_url }}" target="_blank" class="btn btn-success me-2" onclick="clearInterval(interval); document.getElementById('countdown').closest('p').style.display='none'">View Record</a>
+    <!-- <a href="{{ url_for('form.webform') }}" class="btn btn-outline-secondary">Submit Another</a> -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    let seconds = 10;
+    const countdown = document.getElementById('countdown');
+    const interval = setInterval(() => {
+        seconds--;
+        countdown.textContent = seconds;
+        if (seconds <= 0) {
+            clearInterval(interval);
+            window.location = '{{ record_url }}';
+            // window.open('{{ record_url }}', '_blank');
+        }
+    }, 1000);
+</script>
+{% endblock %}

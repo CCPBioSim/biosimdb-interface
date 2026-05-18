@@ -1,0 +1,15 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="container text-center mt-5">
+    <div class="spinner-border text-primary mb-3" role="status"></div>
+    <p class="text-muted">Submitting to BioSimDB, please wait...</p>
+</div>
+<form id="submit-form" method="POST" action="{{ url_for('form.do_submit') }}" style="display:none"></form>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.getElementById('submit-form').submit();
+</script>
+{% endblock %}

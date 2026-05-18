@@ -1,0 +1,220 @@
+{% macro render_fields(fields, group_name) %}
+<div class="row g-3 align-items-end">
+
+<!-- sort order of value and unit fields -->
+{% if 'value' in fields and 'value_unit' in fields %}
+    {% set sorted_fields = [('value', fields['value']), ('value_unit', fields['value_unit'])] %}
+    {% set hide_field_labels = true %}
+{% elif 'vector_value' in fields and 'value_unit' in fields %}
+    {% set sorted_fields = [('vector_value', fields['vector_value']), ('value_unit', fields['value_unit'])] %}
+    {% set hide_field_labels = true %}
+{% else %}
+    {% set sorted_fields = fields.items() | list | sort(attribute='1.type') %}
+    {% set hide_field_labels = false %}
+{% endif %}
+
+{% for field_name, field in sorted_fields %}
+
+    {% set key = group_name ~ '[' ~ field_name ~ ']' %}
+    {% set value = form_data.get(key, '') %}
+    {% set error = errors.get(key) %}
+
+
+    {% if field.type == "textarea" %}
+        {% set col_class = "col-12" %}
+    {% elif field.type == "checkbox" %}
+        {% set col_class = "col-md-4 col-lg-3" %}
+    {% elif field.fields %}
+        {% set col_class = "col-12" %}
+    {% else %}
+        {% set col_class = "col-md-6 col-lg-6" %}
+    {% endif %}
+    <div class="{{ col_class }} field-container">
+
+    {% if depends %}
+        {% set parent_key = group_name ~ '[' ~ depends ~ ']' %}
+        {% set visible = form_data.get(parent_key) %}
+        <div id="{{ key }}_target" class="conditional-field" {% if not visible %}style="display:none"{% endif %}>
+    {% endif %}
+
+    {% if not hide_field_labels %}
+        {% if field.hint %}
+            <span tabindex="0"
+                data-bs-toggle="popover"
+                data-bs-trigger="focus"
+                data-bs-content="{{ field.hint }}"
+                class="form-label"
+                style="cursor:pointer;">
+                {{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}
+            </span>
+        {% else %}
+            <label class="form-label">{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</label>
+        {% endif %}
+    {% endif %}
+
+    {% if field.fields %}
+        {{ render_fields(field.fields, key) }}
+    {% elif field.type == "textarea" %}
+        <textarea class="form-control form-control-sm {% if error %}is-invalid{% endif %}"
+                name="{{ key }}"
+                rows="2"
+                {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                {% if field.required %}required{% endif %}>{{ value }}</textarea>
+    {% elif field.type == "select" %}
+        <select class="form-select form-select-sm {% if error %}is-invalid{% endif %}"
+                name="{{ key }}"
+                {% if field.required %}required{% endif %}>
+            <option value="">-- Select {{ field.label }} --</option>
+            {% for opt in field.options %}
+                <option value="{{ opt }}" {% if form_data.get(key) == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+        </select>
+
+    {% elif field.type == "checkbox" %}
+
+        {% if field.get("controls") %}
+        {% set target_key = group_name ~ '[' ~ field.controls ~ ']' %}
+        {% endif %}
+        <input type="checkbox"
+            class="form-check-input conditional-toggle"
+            data-target="{{ target_key }}_target"
+            name="{{ key }}"
+            value="1"
+            {% if value %}checked{% endif %}>
+
+        {% else %}
+            <input type="text"
+                class="form-control form-control-sm {% if error %}is-invalid{% endif %}"
+                value="{{ value }}"
+                name="{{ key }}"
+                {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                {% if field.required %}required{% endif %}>
+        {% endif %}
+
+    {% if error %}
+        <div class="invalid-feedback">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    {% if field.repeatable %}
+        <button type="button" class="btn btn-sm btn-outline-secondary w-100 add-field mt-1" data-field="{{ field_name }}">Add Another {{ field.label }}</button>
+    {% endif %}
+
+    {% if depends %}
+    </div>
+    {% endif %}
+
+
+</div>
+{% endfor %}
+</div>
+{% endmacro %}
+
+{% macro render_guidance(field) %}
+<div class="guidance-box mb-3">
+    <strong>{{ field.label }}</strong>
+    <ul class="mb-0 mt-1">
+        {% for opt in field.options %}
+        <li>{{ opt | safe }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endmacro %}
+
+{% macro render_files(files) %}
+<!-- <h5 class="entry-number">Entry</h5> -->
+<div class="row">
+    {% for file_key, file in files.items() %}
+    <div class="col-md-4 mb-3">
+        <label class="form-label">{{ file.label }} {% if file.required %} <span class="text-danger">*</span>{% endif %}</label>
+        <input type="file"
+               class="form-control"
+               {% if file.multiple %}multiple{% endif %}
+               {% if file.required %}required{% endif %}
+               name="{{ file_key }}{% if file.multiple %}[]{% endif %}">
+    </div>
+    {% endfor %}
+</div>
+
+<button type="button"
+        class="btn btn-outline-primary w-100 extract-metadata-btn">
+    Extract Metadata from Files
+</button>
+
+<button type="button"
+        class="btn btn-outline-warning w-100 clear-metadata-btn mt-1">
+    Clear All Files and Metadata Fields
+</button>
+{% endmacro %}
+
+{% macro render_metadata(metadata) %}
+<div class="accordion mt-3 metadata-accordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header metadata-header">
+            <button class="accordion-button collapsed metadata-toggle"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseMetadata"
+                    aria-expanded="false"
+                    aria-controls="collapseMetadata">
+                Simulation Metadata
+            </button>
+        </h2>
+        <div class="accordion-collapse collapse metadata-collapse" id="collapseMetadata">
+            <div class="accordion-body">
+                {% for meta_key, meta_group in metadata.items() %}
+                    {{ render_fields(meta_group, meta_key) }}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+
+{% macro render_simulation_metadata(simulation_metadata) %}
+<nav class="mb-3 mt-3 sticky-top bg-white border-bottom py-2" style="z-index: 1025;">
+    <h5 class="text-center mb-2">Simulation Metadata</h5>
+    <div class="d-flex flex-wrap gap-2 justify-content-center">
+        {% for meta_section, meta_group in simulation_metadata.items() %}
+        <a href="#section_{{ meta_section | replace(' ', '_') }}" class="btn btn-outline-secondary btn-sm text-decoration-none">{{ meta_group.label or meta_section }}</a>
+        {% endfor %}
+    </div>
+</nav>
+
+{% for meta_section, meta_group in simulation_metadata.items() %}
+<div id="section_{{ meta_section | replace(' ', '_') }}" class="mb-4 border rounded p-3 bg-light">
+    <h5 class="fw-semibold border-bottom pb-2">{{ meta_group.label or meta_section }}</h5>
+    {% if meta_group.fields %}
+        {% set sorted_fields = meta_group.fields.items() | list | sort(attribute='1.type') %}
+        {% for field_name, field in sorted_fields %}
+            {% if field.fields %}
+                {% if field.multiple %}
+                    <div class="multiple-field-container" data-field="{{ field_name }}" data-section="{{ meta_section }}"{% if field.max %} data-max="{{ field.max }}"{% endif %}>
+                        <div class="field-instance mb-4">
+                            <h6>{{ field.label }} 1</h6>
+                            {{ render_fields(field.fields, meta_section ~ '[' ~ field_name ~ '][1]') }}
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-instance mt-2">Remove</button>
+                        </div>
+                        <div class="multiple-field-template" style="display:none;">
+                            <h6>{{ field.label }} <span class="instance-number"></span></h6>
+                            {{ render_fields(field.fields, meta_section ~ '[' ~ field_name ~ '][TEMPLATE]') }}
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-instance mt-2">Remove</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary add-instance mb-3" data-field="{{ field_name }}" data-section="{{ meta_section }}">Add Another {{ field.label }}</button>
+                    </div>
+                {% else %}
+                    <div class="mb-4">
+                        <h6>{{ field.label }}</h6>
+                        {{ render_fields(field.fields, meta_section ~ '[' ~ field_name ~ ']') }}
+                    </div>
+                {% endif %}
+            {% else %}
+                {{ render_fields({field_name: field}, meta_section) }}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
+{% endfor %}
+{% endmacro %}

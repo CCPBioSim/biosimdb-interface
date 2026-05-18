@@ -1,0 +1,75 @@
+{% extends "main/base.html" %}
+
+{% from "macros/webform.html" import render_fields, render_files, render_metadata, render_simulation_metadata, render_guidance, render_simulation_modal with context %}
+
+
+{% block content %}
+
+
+<div class="py-4 mt-3 mb-3">
+<form class="upload-form container bg-white rounded border p-4 mb-5" action="/webform" method="POST" enctype="multipart/form-data" id="simulationForm">
+
+    <div class="position-relative d-flex align-items-center mb-2">
+        <a href="{{ BASE_URL }}/communities/biosimdb" target="_blank" class="btn btn-sm btn-outline-primary">BioSimDB ↗</a>
+        <!-- <h2 class="mb-0 position-absolute start-50 translate-middle-x">Data Extraction & Submission Form</h2> -->
+        {% if session.get('access_token') %}
+            <a href="{{ url_for('login.logout') }}" class="btn btn-sm btn-outline-secondary ms-auto">Log out</a>
+        {% else %}
+            <a href="{{ url_for('login.login') }}" class="btn btn-sm btn-outline-primary ms-auto">Log in</a>
+        {% endif %}
+    </div>
+
+            {% for section_key, section in schema.items() %}
+                <div class="form-step card mb-4">
+
+                    <div class="card-header justify-content-between">
+                        <!-- <strong>{{ section.title }}</strong> -->
+                        <h5 class="mb-0 text-center">{{ section.title }}</h5>
+                    </div>
+
+                    <div class="card-body section-container"
+                        data-section="{{ section_key }}">
+                        <p class="text-muted mb-4">{{ section.description }}</p>
+
+                        {% if section.guidance %}
+                            {{ render_guidance(section.guidance) }}
+                        {% endif %}
+
+                        <div class="section-instance">
+                            {% if section.files %}
+                                {{ render_files(section.files) }}
+                            {% endif %}
+                            {% if section.fields %}
+                                {{ render_fields(section.fields, section_key) }}
+                            {% endif %}
+                            {% if section.metadata %}
+                                {{ render_metadata(section.metadata) }}
+                            {% endif %}
+                            {% if section.simulation_metadata %}
+                                {{ render_simulation_metadata(section.simulation_metadata) }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+        <div class="position-fixed bottom-0 start-50 translate-middle-x" style="z-index:1030; width:100%;">
+            <div class="container bg-white border-start border-end p-3 d-grid gap-2">
+                <input type="submit" class="btn btn-outline-success btn-lg" name="save" value="Download Simulation Metadata">
+                <input type="submit" class="btn btn-outline-success btn-lg" name="submit" value="Submit to BioSimDB">
+            </div>
+        </div>
+
+</form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script type="module" src="{{ url_for('static', filename='js/form/metadata.js') }}"></script>
+<!-- Get hint popovers to work -->
+<script>
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => new bootstrap.Popover(el));
+</script>
+{% endblock %}

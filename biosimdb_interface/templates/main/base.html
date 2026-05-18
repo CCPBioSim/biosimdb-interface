@@ -1,3 +1,17 @@
+{#
+  base.html
+  Site-wide base template. All other templates extend this.
+
+  Blocks:
+    content: Main page body content.
+    scripts: Page-specific JavaScript. Call {{ super() }} to retain Bootstrap.
+
+  Features:
+    - Renders flashed messages as dismissible Bootstrap alerts.
+    - Loads Bootstrap 5 JS bundle from CDN.
+    - Includes head.html for shared <head> content (meta, CSS, title).
+#}
+
 <!DOCTYPE html>
 <html lang="en">
 

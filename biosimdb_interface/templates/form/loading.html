@@ -1,3 +1,12 @@
+{#
+  loading.html
+  Intermediate page shown while a BioSimDB submission is in progress.
+
+  Behaviour:
+    - Displays a spinner while an invisible form auto-submits via POST to form.do_submit.
+    - The hidden form carries the session cookie so the server can retrieve the pending submission.
+    - On completion, the server redirects to submit_success.html.
+#}
 {% extends "main/base.html" %}
 {% block content %}
 <div class="container text-center mt-5">

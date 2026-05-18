@@ -4,7 +4,7 @@ import copy
 import re
 
 from biosimdb_interface.schema.invenio import INVENIO_DSMD_TEMPLATE, INVENIO_FORM_EMPTY
-from biosimdb_interface.schema.webform import WEBFORM_SCHEMA
+from biosimdb_interface.schema.webform import get_simulation_metadata
 
 
 def fill_invenio_metadata(form_data):
@@ -85,7 +85,7 @@ def _get_typehint_map():
         Numeric list indices are represented as ``'*'`` wildcards.
     """
     result = {}
-    simulation_metadata = WEBFORM_SCHEMA.get("data", {}).get("simulation_metadata", {})
+    simulation_metadata = get_simulation_metadata()
     for section_key, section in simulation_metadata.items():
         fields = section.get("fields", {})
         _build_typehint_map(fields, [section_key], result)

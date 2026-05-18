@@ -13,7 +13,7 @@ from flask import (
     url_for,
 )
 
-from biosimdb_interface.schema.webform import WEBFORM_SCHEMA
+from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_metadata
 
 from . import form_bp
 from .upload import prepare_for_invenio, save_pending_submission
@@ -75,9 +75,14 @@ def webform():
             if action == "save":
                 return jsonify({"success": True, "data": json_form})
 
+    schema = {**WEBFORM_SCHEMA}
+    schema["data"] = {
+        **WEBFORM_SCHEMA["data"],
+        "simulation_metadata": get_simulation_metadata(),
+    }
     return render_template(
         "form/webform.html",
-        schema=WEBFORM_SCHEMA,
+        schema=schema,
         form_data={},
         errors={},
     )

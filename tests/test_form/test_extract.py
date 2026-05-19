@@ -9,7 +9,7 @@ def test_extract_missing_files_returns_400(client):
 
 
 def test_extract_success(client):
-    with patch("biosimdb_interface.form.extract.SchemaPopulator") as MockSP:
+    with patch("biosimdb_interface.form.extract.MetadataPopulator") as MockSP:
         MockSP.return_value.populate.return_value = {"engine": "GROMACS"}
         data = {
             "topology": (io.BytesIO(b"fake"), "topol.gro"),
@@ -23,7 +23,7 @@ def test_extract_success(client):
 
 
 def test_extract_exception_returns_500(client):
-    with patch("biosimdb_interface.form.extract.SchemaPopulator") as MockSP:
+    with patch("biosimdb_interface.form.extract.MetadataPopulator") as MockSP:
         MockSP.return_value.populate.side_effect = RuntimeError("bad file")
         data = {
             "topology": (io.BytesIO(b"fake"), "topol.gro"),

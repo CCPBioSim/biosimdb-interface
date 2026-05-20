@@ -3,14 +3,14 @@
 Metadata extraction endpoint.
 
 Receives uploaded topology and trajectory files, extracts simulation metadata
-using :class:`biosim_extractor.schema.populateschema.SchemaPopulator`, and
+using :class:`biosim_extractor.metadata.populatemetadata.MetadataPopulator`, and
 optionally validates the result against the BioSim schema.
 """
 
 import os
 import tempfile
 
-from biosim_extractor.schema.populateschema import SchemaPopulator
+from biosim_extractor.metadata.populatemetadata import MetadataPopulator
 from flask import jsonify, request
 
 from . import form_bp
@@ -24,7 +24,7 @@ def extract_metadata():
         - ``topology``: a single topology file.
         - ``trajectory[]``: one or more trajectory files.
 
-    Files are saved to temporary paths, passed to :class:`SchemaPopulator`,
+    Files are saved to temporary paths, passed to :class:`MetadataPopulator`,
     and the result is validated against the schema at ``BIOSIM_SCHEMA_PATH``.
 
     Returns:
@@ -54,7 +54,7 @@ def extract_metadata():
                 traj.save(traj_path)
                 traj_files.append(traj_path)
 
-            populator = SchemaPopulator(
+            populator = MetadataPopulator(
                 schema_path=os.getenv("ENGINE_MAPPING_SCHEMA_PATH", ""),
                 top_file=topo_file.name,
                 traj_file=traj_files,

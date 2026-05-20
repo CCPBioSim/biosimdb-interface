@@ -1,5 +1,5 @@
 biosimdb-interface
-==============================
+==================
 A repository for extracting and uploading simulation data via a web interface to the PSDI hosted BioSimDB community data-collection.
 
 ## Project Status

@@ -18,9 +18,10 @@ abstract: >-
   A repository for the BioSimDB Interface within the
   CCPBioSim organisation
 keywords:
-  - Template
-  - Python
-  - Package
+  - GUI
+  - metadata extraction
+  - Invenio
+  - Data submission
 license: MIT
 version: 0.0.1
 date-released: '2026-03-16'

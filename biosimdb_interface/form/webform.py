@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 
-from biosim_extractor.schema.validateschema import validate_metadata
+from biosim_extractor.metadata.validatemetadata import validate_metadata
 from flask import (
     current_app,
     flash,

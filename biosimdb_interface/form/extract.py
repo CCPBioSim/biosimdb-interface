@@ -10,7 +10,7 @@ optionally validates the result against the BioSim schema.
 import os
 import tempfile
 
-from biosim_extractor.schema.populatemetadata import MetadataPopulator
+from biosim_extractor.metadata.populatemetadata import MetadataPopulator
 from flask import jsonify, request
 
 from . import form_bp

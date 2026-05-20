@@ -3,7 +3,7 @@
 Metadata extraction endpoint.
 
 Receives uploaded topology and trajectory files, extracts simulation metadata
-using :class:`biosim_extractor.schema.populatemetadata.MetadataPopulator`, and
+using :class:`biosim_extractor.metadata.populatemetadata.MetadataPopulator`, and
 optionally validates the result against the BioSim schema.
 """
 

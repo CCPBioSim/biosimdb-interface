@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 
+from biosim_extractor.metadata.convertpopulated import convert_populated_metadata_units
 from biosim_extractor.metadata.validatemetadata import validate_metadata
 from flask import (
     current_app,
@@ -64,6 +65,9 @@ def webform():
                         "validation_errors": validation_errors,
                     }
                 )
+
+            # convert to standard units
+            json_form = convert_populated_metadata_units(json_form)
 
             if action == "submit":
                 save_pending_submission()

@@ -8,6 +8,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+
+# Copy schema files into the image
+COPY ../biosim-schema/schema_webformfields.json /app/schema_webformfields.json
+COPY ../biosim-schema/schema_enginemappings.json /app/schema_enginemappings.json
+COPY ../biosim-schema/biosim_schema/schema/biosim_schema.yaml /app/biosim_schema.yaml
+
+# Set environment variables to point to these files inside the container
+ENV WEBFORM_SCHEMA_PATH=/app/schema_webformfields.json
+ENV ENGINE_MAPPING_SCHEMA_PATH=/app/schema_enginemappings.json
+ENV BIOSIM_SCHEMA_PATH=/app/biosim_schema.yaml
+
 # Copy biosim-extractor and install it
 COPY biosim-extractor /biosim-extractor
 RUN pip install --no-cache-dir /biosim-extractor

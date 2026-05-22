@@ -41,7 +41,7 @@ dependencies = [
     "MDAnalysis==2.10.0",
     "python-dotenv==1.2.2",
     "gunicorn>=23,<24",
-    "biosim-extractor @ git+ssh://git@github.com/CCPBioSim/biosim-extractor.git"
+    # "biosim-extractor @ git+ssh://git@github.com/CCPBioSim/biosim-extractor.git"
 ]
 
 [project.urls]

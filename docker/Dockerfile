@@ -8,12 +8,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy biosim-extractor and install it
+COPY biosim-extractor /biosim-extractor
+RUN pip install --no-cache-dir /biosim-extractor
+
 # Install the package
-COPY pyproject.toml .
-COPY README.md .
-COPY LICENSE .
-COPY biosimdb_interface/ biosimdb_interface/
-RUN pip install --no-cache-dir .
+COPY biosimdb-interface/pyproject.toml .
+COPY biosimdb-interface/README.md .
+COPY biosimdb-interface/LICENSE .
+COPY biosimdb-interface /biosimdb-interface
+RUN pip install --no-cache-dir /biosimdb-interface
 
 # Copy schema files at a known path (mounted at runtime for dev — see below)
 # COPY ../biosim-schema /biosim-schema

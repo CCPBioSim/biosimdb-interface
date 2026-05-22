@@ -10,9 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 
 # Copy schema files into the image
-COPY ../biosim-schema/schema_webformfields.json /app/schema_webformfields.json
-COPY ../biosim-schema/schema_enginemappings.json /app/schema_enginemappings.json
-COPY ../biosim-schema/biosim_schema/schema/biosim_schema.yaml /app/biosim_schema.yaml
+COPY biosim-schema/schema_webformfields.json /app/schema_webformfields.json
+COPY biosim-schema/schema_enginemappings.json /app/schema_enginemappings.json
+COPY biosim-schema/biosim_schema/schema/biosim_schema.yaml /app/biosim_schema.yaml
 
 # Set environment variables to point to these files inside the container
 ENV WEBFORM_SCHEMA_PATH=/app/schema_webformfields.json

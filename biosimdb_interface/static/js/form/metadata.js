@@ -28,7 +28,7 @@ document.addEventListener('click', function(e) {
             });
         });
 
-        fetch('/extract_metadata', {
+        fetch(window.APPLICATION_BASE + '/extract_metadata', {
             method: 'POST',
             body: formData
         })
@@ -421,7 +421,7 @@ function requireExtraction(form) {
 function validateAndSubmit(form, onSuccess) {
     const formData = new FormData(form);
     formData.append('save', '1');
-    fetch('/webform', { method: 'POST', body: formData })
+    fetch(window.APPLICATION_BASE + '/webform', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
             if (data.validation_errors && data.validation_errors.length > 0) {

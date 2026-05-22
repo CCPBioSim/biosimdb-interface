@@ -29,7 +29,7 @@
 
 
 <div class="py-4 mt-3 mb-3">
-<form class="upload-form container bg-white rounded border p-4 mb-5" action="/webform" method="POST" enctype="multipart/form-data" id="simulationForm">
+<form class="upload-form container bg-white rounded border p-4 mb-5" action="{{ url_for('form.webform') }}" method="POST" enctype="multipart/form-data" id="simulationForm">
 
     <div class="position-relative d-flex align-items-center mb-2">
         <a href="{{ BASE_URL }}/communities/biosimdb" target="_blank" class="btn btn-sm btn-outline-primary">BioSimDB ↗</a>

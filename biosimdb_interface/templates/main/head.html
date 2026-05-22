@@ -9,12 +9,74 @@
     - Page title and favicon
 #}
 
- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/styles.css') }}">
- <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.scss') }}">
+ <!-- Joomla header -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="Joomla! - Open Source Content Management">
+<title>Our Community</title>
+<link href="/media/system/images/joomla-favicon.svg" rel="icon" type="image/svg+xml">
+<link href="/media/system/images/favicon.ico" rel="alternate icon" type="image/vnd.microsoft.icon">
+<link href="/media/system/images/joomla-favicon-pinned.svg" rel="mask-icon" color="#000">
 
- <TITLE>
+<link href="/media/system/css/joomla-fontawesome.min.css?34280d" rel="lazy-stylesheet"><noscript><link href="/media/system/css/joomla-fontawesome.min.css?34280d" rel="stylesheet"></noscript>
+<link href="/media/com_ccpbiosim/css/site.css?34280d" rel="stylesheet">
+<link href="/media/templates/site/cassiopeia/css/template.min.css?34280d" rel="stylesheet">
+<link href="/media/templates/site/cassiopeia/css/global/colors_standard.min.css?34280d" rel="stylesheet">
+<link href="/media/mod_menu/css/mod-menu.min.css?a45ede" rel="stylesheet">
+<link href="/media/templates/site/ccpbiosim_extended/css/global/colors.min.css?34280d" rel="stylesheet">
+<link href="/media/templates/site/ccpbiosim_extended/css/global/fonts.min.css?34280d" rel="stylesheet">
+<link href="/media/templates/site/cassiopeia/css/vendor/joomla-custom-elements/joomla-alert.min.css?0.4.1" rel="stylesheet">
+<link href="/media/templates/site/ccpbiosim_extended/css/user.css?34280d" rel="stylesheet">
+<style>:root {
+    --hue: 214;
+    --template-bg-light: #f0f4fb;
+    --template-text-dark: #495057;
+    --template-text-light: #ffffff;
+    --template-link-color: var(--link-color);
+    --template-special-color: #001B4C;
+    --cassiopeia-font-family-body: Optima, Candara, 'Noto Sans', source-sans-pro, sans-serif;
+        --cassiopeia-font-weight-normal: 400;--cassiopeia-font-family-headings: Optima, Candara, 'Noto Sans', source-sans-pro, sans-serif;
+        --cassiopeia-font-weight-headings: 700;
+}</style>
+<style>:root {
+    --body-bg: rgb(254, 254, 254);
+    --body-color: rgb(23, 23, 23);
+    --btnbg: rgb(39, 170, 223);
+    --btnbgh: rgb(25, 152, 200);
+    --btncolor: rgb(254, 254, 254);
+    --btncolorh: rgb(254, 254, 254);
+    --footerbg: rgb(15, 23, 42);
+    --footercolor: rgb(254, 254, 254);
+    --headerbg: rgb(29, 121, 137);
+    --headercolor: rgb(255, 255, 255);
+    --link-color: rgb(29, 121, 137);
+    --link-hover-color: rgb(14, 59, 67);
+}</style>
+<style>:root {
+    --body-font-size: 1rem;
+    --h1size: 2rem;
+    --h2size: 1.7rem;
+    --h3size: 1.5rem;
+}</style>
+
+<script src="/media/vendor/metismenujs/js/metismenujs.min.js?1.4.0" defer></script>
+<script src="/media/com_ccpbiosim/js/site.js?34280d"></script>
+<script src="/media/templates/site/cassiopeia/js/mod_menu/menu-metismenu.min.js?34280d" defer></script>
+<script type="application/json" class="joomla-script-options new">{"joomla.jtext":{"ERROR":"Error","MESSAGE":"Message","NOTICE":"Notice","WARNING":"Warning","JCLOSE":"Close","JOK":"OK","JOPEN":"Open"},"system.paths":{"root":"","rootFull":"https:\/\/dev.ccpbiosim.ac.uk\/","base":"","baseFull":"https:\/\/dev.ccpbiosim.ac.uk\/"},"csrf.token":"f8e362e0bee4e9031376d0638ae83b0b","accessibility-options":{"labels":{"menuTitle":"Accessibility Options","increaseText":"Increase Text Size","decreaseText":"Decrease Text Size","increaseTextSpacing":"Increase Text Spacing","decreaseTextSpacing":"Decrease Text Spacing","invertColors":"Invert Colours","grayHues":"Grey Hues","underlineLinks":"Underline Links","bigCursor":"Big Cursor","readingGuide":"Reading Guide","textToSpeech":"Text to Speech","speechToText":"Speech to Text","resetTitle":"Reset","closeTitle":"Close"},"icon":{"position":{"left":{"size":"0","units":"px"}},"useEmojis":false},"hotkeys":{"enabled":true,"helpTitles":true},"textToSpeechLang":["en-GB"],"speechToTextLang":["en-GB"]}}</script>
+<script src="/media/system/js/core.min.js?a3d8f8"></script>
+<script src="/media/templates/site/cassiopeia/js/template.min.js?34280d" type="module"></script>
+<script src="/media/vendor/bootstrap/js/collapse.min.js?5.3.8" type="module"></script>
+<script src="/media/mod_menu/js/menu.min.js?5a565f" type="module"></script>
+<script src="/media/system/js/messages.min.js?9a4811" type="module"></script>
+<script src="/media/vendor/accessibility/js/accessibility.min.js?3.0.17" defer></script>
+<script type="module">window.addEventListener("load", function() {new Accessibility(Joomla.getOptions("accessibility-options") || {});});</script>
+
+<!-- End Joomla header -->
+
+<!-- Bootstrap and webform css here -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.scss') }}">
+<!-- <TITLE>
     BioSimDB Interface
- </TITLE>
-
- <link rel="shortcut icon" sizes="any" type="image/x-icon" href="{{ url_for('static', filename='images/white-BioSimDB-logo-notext.svg') }}">
+</TITLE> -->

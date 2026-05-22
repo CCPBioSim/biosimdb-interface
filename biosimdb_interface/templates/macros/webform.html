@@ -241,6 +241,12 @@
         <a href="#section_{{ meta_section | replace(' ', '_') }}" class="btn btn-outline-secondary btn-sm text-decoration-none">{{ meta_group.label or meta_section }}</a>
         {% endfor %}
     </div>
+
+    <!-- Include submit/save buttons in sticky top -->
+    <div class="container bg-white border-start border-end p-3 d-grid gap-2">
+        <input type="submit" class="btn btn-outline-success btn-lg" name="save" value="Download Simulation Metadata">
+        <input type="submit" class="btn btn-outline-success btn-lg" name="submit" value="Submit to BioSimDB">
+    </div>
 </nav>
 
 {% for meta_section, meta_group in simulation_metadata.items() %}

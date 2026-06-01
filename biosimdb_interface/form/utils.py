@@ -107,18 +107,39 @@ def form_to_json(form):
     """
     typehint_map = _get_typehint_map()
     data = {}
-    for key, value in form.items():
+    # Use lists() so repeated keys (e.g. multiselect name="x[]") are preserved.
+    if hasattr(form, "lists"):
+        key_values_iter = form.lists()
+    else:
+        # Fallback for plain dict-like input
+        key_values_iter = (
+            (k, v if isinstance(v, list) else [v]) for k, v in form.items()
+        )
+
+    for key, values in key_values_iter:
         if key in ("save", "submit"):
             continue
+
         parts = re.findall(r"\w+", key)
         if not parts or "TEMPLATE" in parts:
             continue
-        if parts[-1] == "vector_value" and isinstance(value, str) and value:
-            value = [float(x.strip()) for x in value.split(",") if x.strip()]
-        else:
-            # build a schema-lookup key replacing numeric indices with '*'
-            lookup = tuple(p if not p.isdigit() else "*" for p in parts)
-            typehint = typehint_map.get(lookup) or typehint_map.get(tuple(parts))
+
+        # Vector quantity field stays scalar-like text input; parse first value only.
+        if parts[-1] == "vector_value":
+            raw = values[0] if values else ""
+            if isinstance(raw, str) and raw:
+                value = [float(x.strip()) for x in raw.split(",") if x.strip()]
+            else:
+                value = raw
+            _set_nested(data, parts, value)
+            continue
+
+        # Build schema lookup key replacing numeric indices with '*'
+        lookup = tuple(p if not p.isdigit() else "*" for p in parts)
+        typehint = typehint_map.get(lookup) or typehint_map.get(tuple(parts))
+
+        converted_values = []
+        for value in values:
             if value != "" and typehint:
                 if typehint == "integer":
                     try:
@@ -132,7 +153,16 @@ def form_to_json(form):
                         pass
                 elif typehint == "boolean":
                     value = bool(value)
-        _set_nested(data, parts, value)
+            converted_values.append(value)
+
+        # For repeated keys keep list (after dropping empty placeholders);
+        # for single keys keep scalar to preserve existing behavior.
+        if len(converted_values) > 1:
+            value_out = [v for v in converted_values if v != ""]
+        else:
+            value_out = converted_values[0] if converted_values else ""
+
+        _set_nested(data, parts, value_out)
     return data
 
 

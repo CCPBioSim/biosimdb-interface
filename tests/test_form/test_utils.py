@@ -1,3 +1,5 @@
+from werkzeug.datastructures import ImmutableMultiDict
+
 from biosimdb_interface.form.utils import fill_invenio_metadata, form_to_json
 
 
@@ -17,6 +19,35 @@ def test_form_to_json_vector_value():
     data = {"sim[1][vector_value]": "1.0, 2.0, 3.0"}
     result = form_to_json(data)
     assert result["sim"][0]["vector_value"] == [1.0, 2.0, 3.0]
+
+
+def test_form_to_json_multiselect_repeated_keys():
+    data = ImmutableMultiDict(
+        [
+            ("analysis[method][]", "RMSD"),
+            ("analysis[method][]", "DSSP"),
+        ]
+    )
+    result = form_to_json(data)
+    assert result == {"analysis": {"method": ["RMSD", "DSSP"]}}
+
+
+def test_form_to_json_multiselect_drops_empty_placeholder():
+    data = ImmutableMultiDict(
+        [
+            ("analysis[method][]", ""),
+            ("analysis[method][]", "RMSD"),
+            ("analysis[method][]", "DSSP"),
+        ]
+    )
+    result = form_to_json(data)
+    assert result == {"analysis": {"method": ["RMSD", "DSSP"]}}
+
+
+def test_form_to_json_plain_dict_list_value_preserved():
+    data = {"analysis[method][]": ["RMSD", "DSSP"]}
+    result = form_to_json(data)
+    assert result == {"analysis": {"method": ["RMSD", "DSSP"]}}
 
 
 def test_fill_invenio_metadata_returns_dict():

@@ -1,4 +1,4 @@
-name: biosim-extractor CI
+name: biosimdb-interface CI
 
 on:
   push:
@@ -25,16 +25,32 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install biosim-extractor and its testing dependencies
+      - name: Install biosimdb-interface and its testing dependencies
         run: pip install -e .[testing]
 
-      - name: Run test suite
-        run: pytest --cov biosim_extractor --cov-report term-missing --cov-append .
+      - name: Get latest biosim-schema release tag
+        id: schema-tag
+        shell: bash
+        run: |
+          TAG=$(gh release view --repo CCPBioSim/biosim-schema --json tagName --template '{{.tagName}}')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
         env:
-          WEBFORM_SCHEMA_PATH: ""
-          ENGINE_MAPPING_SCHEMA_PATH: ""
-          BIOSIM_SCHEMA_PATH: ""
-          SECRET_KEY: "test-secret-key"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout biosim-schema
+        uses: actions/checkout@v4
+        with:
+          repository: CCPBioSim/biosim-schema
+          path: biosim-schema
+          ref: ${{ steps.schema-tag.outputs.tag }}
+
+      - name: Run test suite
+        run: pytest --cov biosimdb_interface --cov-report term-missing --cov-append tests/
+        env:
+          WEBFORM_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/project/schema_summary.yaml
+          ENGINE_MAPPING_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/project/schema_enginemappings.json
+          BIOSIM_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/biosim_schema/schema/biosim_schema.yaml
+          SECRET_KEY: "ci-testing-only-key"
 
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
@@ -42,6 +58,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel: true
           fail-on-error: false
+
+  coveralls-finish:
+    name: Finish Coveralls
+    needs: tests
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        parallel-finished: true
+        fail-on-error: false
 
   docs:
     runs-on: ubuntu-latest

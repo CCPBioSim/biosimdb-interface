@@ -47,7 +47,7 @@ jobs:
       - name: Run test suite
         run: pytest --cov biosimdb_interface --cov-report term-missing --cov-append tests/
         env:
-          WEBFORM_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/project/schema_summary.yaml
+          WEBFORM_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/project/schema_webformfields.json
           ENGINE_MAPPING_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/project/schema_enginemappings.json
           BIOSIM_SCHEMA_PATH: ${{ github.workspace }}/biosim-schema/biosim_schema/schema/biosim_schema.yaml
           SECRET_KEY: "ci-testing-only-key"

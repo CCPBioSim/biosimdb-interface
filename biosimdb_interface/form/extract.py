@@ -70,13 +70,9 @@ def extract_metadata():
         if not topology or not trajectories:
             return jsonify({"error": "Simulation files are missing."}), 400
 
-        with (
-            tempfile.NamedTemporaryFile(
-                suffix=os.path.splitext(topology.filename)[1]
-            ) as topo_file,
-            tempfile.TemporaryDirectory() as temp_dir,
-        ):
-            topology.save(topo_file.name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            topo_path = os.path.join(temp_dir, topology.filename)
+            topology.save(topo_path)
             traj_files = []
 
             for traj in trajectories:
@@ -84,9 +80,7 @@ def extract_metadata():
                 traj.save(traj_path)
                 traj_files.append(traj_path)
 
-            result, validation_errors = extract_files_validate(
-                topo_file.name, traj_files
-            )
+            result, validation_errors = extract_files_validate(topo_path, traj_files)
 
             # Keep authoritative extracted payload on the server
             session["extracted_metadata"] = result

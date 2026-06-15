@@ -28,21 +28,27 @@ jobs:
       - name: Install biosimdb-interface and its testing dependencies
         run: pip install -e .[testing]
 
-      - name: Get latest biosim-schema release tag
+      - name: Get latest biosim-schema release tag (or fail if none)
         id: schema-tag
         shell: bash
         run: |
+          # Attempt to get the latest release tag. If no releases exist, this command will fail,
+          # and the workflow will stop here, which is appropriate if release assets are mandatory.
           TAG=$(gh release view --repo CCPBioSim/biosim-schema --json tagName --template '{{.tagName}}')
           echo "tag=$TAG" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout biosim-schema
-        uses: actions/checkout@v4
-        with:
-          repository: CCPBioSim/biosim-schema
-          path: biosim-schema
-          ref: ${{ steps.schema-tag.outputs.tag }}
+      - name: Download biosim-schema artifacts
+        run: gh release download ${{ steps.schema-tag.outputs.tag }} --repo CCPBioSim/biosim-schema --pattern "biosim-schema-artifacts.tar.gz"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract biosim-schema artifacts
+        shell: bash
+        run: |
+          mkdir -p biosim-schema
+          tar -xzf biosim-schema-artifacts.tar.gz -C biosim-schema
 
       - name: Run test suite
         run: pytest --cov biosimdb_interface --cov-report term-missing --cov-append tests/

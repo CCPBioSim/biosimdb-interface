@@ -30,7 +30,11 @@ def get_simulation_metadata():
     Returns:
         dict: Parsed simulation metadata schema.
     """
-    path = os.getenv("WEBFORM_SCHEMA_PATH", "")
+    path = os.getenv("WEBFORM_SCHEMA_PATH")
+    if not path:
+        # Return an empty schema or raise a more descriptive error if preferred
+        return {}
+
     mtime = os.path.getmtime(path)
     if _cache["mtime"] != mtime:
         _cache["schema"] = SchemaPopulator(schema_path=path).load_schema()

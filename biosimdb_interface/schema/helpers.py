@@ -6,29 +6,6 @@ Read in schema for webform fields and save to python object.
 import argparse
 import json
 
-
-def load_schema(self):
-    """Load schema JSON from a URL or local file path into ``self.schema``.
-
-    Args:
-        self: Object with ``schema_path`` (str) attribute.
-
-    Returns:
-        dict: Parsed JSON schema.
-    """
-    if self.schema_path.startswith("http://") or self.schema_path.startswith(
-        "https://"
-    ):
-        import urllib.request
-
-        with urllib.request.urlopen(self.schema_path) as f:
-            self.schema = json.load(f)
-    else:
-        with open(self.schema_path) as f:
-            self.schema = json.load(f)
-    return self.schema
-
-
 # -----------------------------
 # Main class
 # -----------------------------
@@ -50,9 +27,16 @@ class SchemaPopulator:
         Returns:
             dict: Parsed JSON schema.
         """
-        with open(self.schema_path) as f:
-            self.schema = json.load(f)
-            return self.schema
+        if self.schema_path.startswith(("http://", "https://")):
+            import urllib.request
+
+            with urllib.request.urlopen(self.schema_path) as f:
+                self.schema = json.load(f)
+        else:
+            with open(self.schema_path) as f:
+                self.schema = json.load(f)
+
+        return self.schema
 
 
 # -----------------------------

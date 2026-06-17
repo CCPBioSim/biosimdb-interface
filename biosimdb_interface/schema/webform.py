@@ -31,17 +31,13 @@ def get_simulation_metadata():
         dict: Parsed simulation metadata schema.
     """
     path = os.getenv("WEBFORM_SCHEMA_PATH")
-    if not path:
-        raise RuntimeError("WEBFORM_SCHEMA_PATH environment variable is not set.")
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Schema file not found at: {path}")
+    if not path or not os.path.exists(path):
+        # Return an empty schema
+        return {}
 
     mtime = os.path.getmtime(path)
     if _cache["mtime"] != mtime:
-        schema = SchemaPopulator(schema_path=path).load_schema()
-        if not schema:
-            raise ValueError(f"Schema file at {path} is empty or invalid.")
-        _cache["schema"] = schema
+        _cache["schema"] = SchemaPopulator(schema_path=path).load_schema()
         _cache["mtime"] = mtime
     return _cache["schema"]
 

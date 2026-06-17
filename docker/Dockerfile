@@ -56,7 +56,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-minimal \
+    python3 \
     libgomp1 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -70,6 +70,7 @@ RUN groupadd -g 10001 biosim && \
       biosim
 
 WORKDIR /app
+RUN chown biosim:biosim /app
 
 # Copy the pre-built virtual environment from the builder stage
 COPY --from=builder --chown=biosim:biosim /venv /venv

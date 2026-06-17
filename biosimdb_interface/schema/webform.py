@@ -31,8 +31,8 @@ def get_simulation_metadata():
         dict: Parsed simulation metadata schema.
     """
     path = os.getenv("WEBFORM_SCHEMA_PATH")
-    if not path:
-        # Return an empty schema or raise a more descriptive error if preferred
+    if not path or not os.path.exists(path):
+        # Return an empty schema
         return {}
 
     mtime = os.path.getmtime(path)

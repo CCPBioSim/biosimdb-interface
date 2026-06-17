@@ -1,0 +1,62 @@
+name: Publish Docker image to GHCR
+
+on:
+  repository_dispatch:
+    types: [build]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-docker-image:
+    runs-on: ubuntu-25.10
+    permissions:
+      contents: read
+      packages: write # Required to push images to GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch external versions and build date
+        id: vars
+        shell: bash
+        run: |
+          echo "date=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "schema=$(gh release view --repo CCPBioSim/biosim-schema --json tagName --template '{{.tagName}}')" >> $GITHUB_OUTPUT
+          echo "extractor=$(gh release view --repo CCPBioSim/biosim-extractor --json tagName --template '{{.tagName}}')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.BUILD_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+          labels: |
+            org.opencontainers.image.created=${{ steps.vars.outputs.date }}
+            biosim.schema.version=${{ steps.vars.outputs.schema }}
+            biosim.extractor.version=${{ steps.vars.outputs.extractor }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

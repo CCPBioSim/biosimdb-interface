@@ -32,12 +32,16 @@ def get_simulation_metadata():
     """
     path = os.getenv("WEBFORM_SCHEMA_PATH")
     if not path:
-        # Return an empty schema or raise a more descriptive error if preferred
-        return {}
+        raise RuntimeError("WEBFORM_SCHEMA_PATH environment variable is not set.")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Schema file not found at: {path}")
 
     mtime = os.path.getmtime(path)
     if _cache["mtime"] != mtime:
-        _cache["schema"] = SchemaPopulator(schema_path=path).load_schema()
+        schema = SchemaPopulator(schema_path=path).load_schema()
+        if not schema:
+            raise ValueError(f"Schema file at {path} is empty or invalid.")
+        _cache["schema"] = schema
         _cache["mtime"] = mtime
     return _cache["schema"]
 

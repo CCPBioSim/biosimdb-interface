@@ -48,6 +48,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
+            type=raw,value=schema-${{ steps.vars.outputs.schema }}-extractor-${{ steps.vars.outputs.extractor }}-${{ steps.vars.outputs.date }}
           labels: |
             org.opencontainers.image.created=${{ steps.vars.outputs.date }}
             biosim.schema.version=${{ steps.vars.outputs.schema }}

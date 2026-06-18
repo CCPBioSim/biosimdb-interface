@@ -11,9 +11,39 @@ import os
 import tempfile
 
 from biosim_extractor.metadata.populatemetadata import MetadataPopulator
-from flask import jsonify, request
+from flask import jsonify, request, session
 
 from . import form_bp
+
+
+def extract_files_validate(top_file, traj_file):
+    """Extract metadata from simulation files and validate against the schema.
+
+    Args:
+        top_file (str): Path to the topology file.
+        traj_file (str or list[str]): Path or list of paths to the trajectory file(s).
+
+    Returns:
+        tuple: A tuple containing:
+            - result (dict): The extracted and populated metadata dictionary.
+            - validation_errors (list[str]): A list of validation error messages,
+              empty if validation succeeded.
+    """
+    populator = MetadataPopulator(
+        schema_path=os.getenv("ENGINE_MAPPING_SCHEMA_PATH", ""),
+        top_file=top_file,
+        traj_file=traj_file,
+    )
+
+    result = populator.populate()
+    biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
+    validation_errors = []
+    try:
+        populator.validate(result, biosimschema_path, strict=True)
+    except ValueError as e:
+        validation_errors = str(e).splitlines()
+
+    return result, validation_errors
 
 
 @form_bp.route("/extract_metadata", methods=["POST"])
@@ -40,13 +70,9 @@ def extract_metadata():
         if not topology or not trajectories:
             return jsonify({"error": "Simulation files are missing."}), 400
 
-        with (
-            tempfile.NamedTemporaryFile(
-                suffix=os.path.splitext(topology.filename)[1]
-            ) as topo_file,
-            tempfile.TemporaryDirectory() as temp_dir,
-        ):
-            topology.save(topo_file.name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            topo_path = os.path.join(temp_dir, topology.filename)
+            topology.save(topo_path)
             traj_files = []
 
             for traj in trajectories:
@@ -54,19 +80,10 @@ def extract_metadata():
                 traj.save(traj_path)
                 traj_files.append(traj_path)
 
-            populator = MetadataPopulator(
-                schema_path=os.getenv("ENGINE_MAPPING_SCHEMA_PATH", ""),
-                top_file=topo_file.name,
-                traj_file=traj_files,
-            )
+            result, validation_errors = extract_files_validate(topo_path, traj_files)
 
-            result = populator.populate()
-            biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
-            validation_errors = []
-            try:
-                populator.validate(result, biosimschema_path, strict=True)
-            except ValueError as e:
-                validation_errors = str(e).splitlines()
+            # Keep authoritative extracted payload on the server
+            session["extracted_metadata"] = result
 
             if len(validation_errors) > 0:
                 return jsonify(

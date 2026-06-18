@@ -1,40 +1,95 @@
-FROM python:3.12-slim
+# Stage 1: Fetch Schema Artifacts
+FROM ubuntu:24.04 AS schema-fetcher
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl jq tar ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+WORKDIR /tmp
+
+RUN TAG=$(curl -fsSL https://api.github.com/repos/CCPBioSim/biosim-schema/releases/latest | jq -r .tag_name) && \
+    curl -fsSL -o artifacts.tar.gz \
+    "https://github.com/CCPBioSim/biosim-schema/releases/download/${TAG}/biosim-schema-artifacts.tar.gz" && \
+    mkdir -p /opt/biosim-schema && \
+    tar -xzf artifacts.tar.gz -C /opt/biosim-schema
+
+
+# Stage 2: Build Python dependencies
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    build-essential \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python3 -m venv /venv
+
+# Activate venv and install dependencies
+ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /app
 
-# Install build dependencies for MDAnalysis
+COPY pyproject.toml README.md LICENSE ./
+COPY biosimdb_interface/ biosimdb_interface/
+
+# Install application and its dependencies into the venv
+RUN pip install --upgrade pip setuptools && \
+    pip install --no-cache-dir gunicorn .
+
+
+# Stage 3: Runtime
+FROM ubuntu:24.04
+
+ARG PORT=5002
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
+    python3 \
+    libgomp1 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd -g 10001 biosim && \
+    useradd \
+      --uid 10001 \
+      --gid biosim \
+      --create-home \
+      --shell /usr/sbin/nologin \
+      biosim
 
-# Copy schema files into the image
-COPY biosim-schema/schema_webformfields.json /app/schema_webformfields.json
-COPY biosim-schema/schema_enginemappings.json /app/schema_enginemappings.json
-COPY biosim-schema/biosim_schema/schema/biosim_schema.yaml /app/biosim_schema.yaml
+WORKDIR /app
+RUN chown biosim:biosim /app
 
-# Set environment variables to point to these files inside the container
-ENV WEBFORM_SCHEMA_PATH=/app/schema_webformfields.json
-ENV ENGINE_MAPPING_SCHEMA_PATH=/app/schema_enginemappings.json
-ENV BIOSIM_SCHEMA_PATH=/app/biosim_schema.yaml
+# Copy the pre-built virtual environment from the builder stage
+COPY --from=builder --chown=biosim:biosim /venv /venv
 
-# Copy biosim-extractor and install it
-COPY biosim-extractor /biosim-extractor
-RUN pip install --no-cache-dir /biosim-extractor
+# Copy schema artifacts from the fetcher stage
+COPY --from=schema-fetcher --chown=biosim:biosim /opt/biosim-schema /opt/biosim-schema
 
-# Install the package
-COPY biosimdb-interface/pyproject.toml .
-COPY biosimdb-interface/README.md .
-COPY biosimdb-interface/LICENSE .
-COPY biosimdb-interface /biosimdb-interface
-RUN pip install --no-cache-dir /biosimdb-interface
+# Set PATH to include the virtual environment's bin directory
+ENV PATH="/venv/bin:$PATH"
 
-# Copy schema files at a known path (mounted at runtime for dev — see below)
-# COPY ../biosim-schema /biosim-schema
+USER biosim
 
-EXPOSE 5002
+ENV PORT=${PORT} \
+    FLASK_APP=biosimdb_interface \
+    PYSTOW_HOME=/app/.pystow \
+    WEBFORM_SCHEMA_PATH=/opt/biosim-schema/project/schema_webformfields.json \
+    ENGINE_MAPPING_SCHEMA_PATH=/opt/biosim-schema/project/schema_enginemappings.json \
+    BIOSIM_SCHEMA_PATH=/opt/biosim-schema/biosim_schema/schema/biosim_schema.yaml
 
-ENV FLASK_APP=biosimdb_interface
+EXPOSE ${PORT}
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5002", "biosimdb_interface:create_app()"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT 'biosimdb_interface:create_app()'"]

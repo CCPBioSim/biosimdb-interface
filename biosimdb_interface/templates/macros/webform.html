@@ -51,6 +51,7 @@
     {% set key = group_name ~ '[' ~ field_name ~ ']' %}
     {% set value = form_data.get(key, '') %}
     {% set error = errors.get(key) %}
+    {% set is_locked = field.get("extracted_only") or field.get("readonly") %}
 
 
     {% if field.type == "textarea" %}
@@ -91,6 +92,7 @@
         <textarea class="form-control form-control-sm {% if error %}is-invalid{% endif %}"
                 name="{{ key }}"
                 rows="2"
+                {% if is_locked %}readonly{% endif %}
                 {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
                 {% if field.required %}required{% endif %}>{{ value }}</textarea>
     {% elif field.type == "select" %}
@@ -98,6 +100,7 @@
         <select class="form-select form-select-sm {% if error %}is-invalid{% endif %}"
                 name="{{ key }}{% if field.multiple %}[]{% endif %}"
                 {% if field.multiple %}multiple size="{{ [field.options|length + 1, 3] | min }}"{% endif %}
+                {% if is_locked %}disabled{% endif %}
                 {% if field.required %}required{% endif %}>
             <option value=""
                     {% if not field.multiple and (value == '' or value is none) %}selected{% endif %}>
@@ -132,6 +135,7 @@
                 class="form-control form-control-sm {% if error %}is-invalid{% endif %}"
                 value="{{ value }}"
                 name="{{ key }}"
+                {% if is_locked %}readonly{% endif %}
                 {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
                 {% if field.required %}required{% endif %}>
         {% endif %}
@@ -144,6 +148,10 @@
 
     {% if field.repeatable %}
         <button type="button" class="btn btn-sm btn-outline-secondary w-100 add-field mt-1" data-field="{{ field_name }}">Add Another {{ field.label }}</button>
+    {% endif %}
+
+    {% if is_locked %}
+    <small class="text-muted">Extracted from files{% if field.get("source") %} ({{ field.source }}){% endif %}</small>
     {% endif %}
 
     {% if depends %}

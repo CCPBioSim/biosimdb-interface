@@ -51,6 +51,13 @@ def webform():
             # include file info in output, ro-crate?
             json_form = form_to_json(request.form)
             json_form = remove_empty_fields(json_form)
+
+            # convert to standard units
+            json_form = convert_populated_metadata_units(json_form)
+
+            # NOTE: note used yet, could be used to validate extracted fields are matching what is returned from json_form
+            # extracted = session.get("extracted_metadata")
+
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
 
             validation_errors = []
@@ -65,9 +72,6 @@ def webform():
                         "validation_errors": validation_errors,
                     }
                 )
-
-            # convert to standard units
-            json_form = convert_populated_metadata_units(json_form)
 
             if action == "submit":
                 save_pending_submission()

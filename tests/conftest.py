@@ -21,6 +21,7 @@ def app():
             "BASE_URL": "http://localhost",
             "REDIRECT_URI": "http://localhost/callback",
             "SCOPES": "test",
+            "APPLICATION_BASE": "",
         }
     )
     yield app

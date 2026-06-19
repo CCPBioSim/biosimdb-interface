@@ -26,12 +26,16 @@ def create_app(test_config=None):
         Configured Flask app instance.
     """
     # create and configure the app
+    APPLICATION_BASE = os.getenv("APPLICATION_BASE", "")
     app = Flask(
         __name__,  # name of the current Python module
         template_folder="templates",  # where html files are stored.
         static_folder="static",  # used for css and js files.
+        static_url_path=f"{APPLICATION_BASE}/static",
         instance_relative_config=True,
     )  # create flask instance
+
+    app.config["APPLICATION_BASE"] = os.getenv("APPLICATION_BASE", "")
 
     # check secret key is not "dev" for prod
     secret_key = os.getenv("SECRET_KEY", "dev")
@@ -47,6 +51,7 @@ def create_app(test_config=None):
         AUTH_URL=os.getenv("AUTH_URL", ""),
         TOKEN_URL=os.getenv("TOKEN_URL", ""),
         BASE_URL=os.getenv("BASE_URL", ""),
+        JOOMLA_BASE_URL=os.getenv("JOOMLA_BASE_URL", "").rstrip("/"),
         API_BASE=os.getenv("API_BASE", ""),
         REDIRECT_URI=os.getenv("REDIRECT_URI", ""),
         SCOPES=os.getenv("SCOPES", "").strip(),
@@ -61,7 +66,11 @@ def create_app(test_config=None):
 
     @app.context_processor
     def inject_base_url():
-        return {"BASE_URL": app.config.get("BASE_URL") or ""}
+        return {
+            "BASE_URL": app.config.get("BASE_URL", ""),
+            "JOOMLA_BASE_URL": app.config.get("JOOMLA_BASE_URL", ""),
+            "APPLICATION_BASE": app.config.get("APPLICATION_BASE", ""),
+        }
 
     # ensure the instance folder exists
     try:
@@ -71,10 +80,10 @@ def create_app(test_config=None):
 
     from .form import form_bp
 
-    app.register_blueprint(form_bp)
+    app.register_blueprint(form_bp, url_prefix=app.config["APPLICATION_BASE"])
 
     from .login import bp as login_bp
 
-    app.register_blueprint(login_bp)
+    app.register_blueprint(login_bp, url_prefix=app.config["APPLICATION_BASE"])
 
     return app

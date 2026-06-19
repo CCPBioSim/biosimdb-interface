@@ -1,0 +1,48 @@
+{#
+  Joomla site header.
+
+  Included only when JOOMLA_BASE_URL is configured.
+#}
+
+<header class="header container-header full-width">
+    <div class="grid-child">
+        <div class="navbar-brand">
+            <a class="brand-logo" href="{{ JOOMLA_BASE_URL }}/">
+                <img loading="eager" decoding="async" src="{{ JOOMLA_BASE_URL }}/images/logos/ccpbiosim/CCPBioSim-logo-white-side-text.svg" alt="CCPBioSim" width="300" height="98">
+            </a>
+        </div>
+    </div>
+
+    <div class="grid-child container-nav">
+        <nav class="navbar navbar-expand-lg" aria-label="Nav Menu">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbar1" aria-controls="navbar1" aria-expanded="false" aria-label="Toggle Navigation">
+                <span class="icon-menu" aria-hidden="true"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbar1">
+                <ul class="mod-menu mod-menu_dropdown-metismenu metismenu mod-list ">
+                    <li class="metismenu-item item-134 level-1 active deeper parent">
+                        <button class="mod-menu__heading nav-header mm-collapsed mm-toggler mm-toggler-nolink" aria-haspopup="true" aria-expanded="false">People</button>
+                        <ul class="mm-collapse">
+                            <li class="metismenu-item item-138 level-2 current active"><a href="{{ JOOMLA_BASE_URL }}/people/our-community" aria-current="page">Our Community</a></li>
+                            <li class="metismenu-item item-139 level-2"><a href="{{ JOOMLA_BASE_URL }}/people/core-team" >Core Team</a></li>
+                            <li class="metismenu-item item-140 level-2"><a href="{{ JOOMLA_BASE_URL }}/people/management-team" >Management Team</a></li>
+                            <li class="metismenu-item item-141 level-2"><a href="{{ JOOMLA_BASE_URL }}/people/advisory-board" >Advisory Board</a></li>
+                        </ul>
+                    </li>
+                    <li class="metismenu-item item-132 level-1"><a href="{{ JOOMLA_BASE_URL }}/science" >Science</a></li>
+                    <li class="metismenu-item item-405 level-1"><a href="{{ JOOMLA_BASE_URL }}/impact" >Impact</a></li>
+                    <li class="metismenu-item item-137 level-1"><span class="mod-menu__heading nav-header">BioSimDB</span></li>
+                    <li class="metismenu-item item-133 level-1"><a href="{{ JOOMLA_BASE_URL }}/software" >Software</a></li>
+                    <li class="metismenu-item item-135 level-1 deeper parent">
+                        <button class="mod-menu__heading nav-header mm-collapsed mm-toggler mm-toggler-nolink" aria-haspopup="true" aria-expanded="false">Events</button>
+                        <ul class="mm-collapse">
+                            <li class="metismenu-item item-256 level-2"><a href="{{ JOOMLA_BASE_URL }}/events/upcoming-events" >Upcoming Events</a></li>
+                            <li class="metismenu-item item-257 level-2"><a href="{{ JOOMLA_BASE_URL }}/events/past-events" >Past Events</a></li>
+                        </ul>
+                    </li>
+                    <li class="metismenu-item item-136 level-1"><a href="{{ JOOMLA_BASE_URL }}/training" >Training</a></li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+</header>

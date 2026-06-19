@@ -51,6 +51,7 @@ def create_app(test_config=None):
         AUTH_URL=os.getenv("AUTH_URL", ""),
         TOKEN_URL=os.getenv("TOKEN_URL", ""),
         BASE_URL=os.getenv("BASE_URL", ""),
+        JOOMLA_BASE_URL=os.getenv("JOOMLA_BASE_URL", "").rstrip("/"),
         API_BASE=os.getenv("API_BASE", ""),
         REDIRECT_URI=os.getenv("REDIRECT_URI", ""),
         SCOPES=os.getenv("SCOPES", "").strip(),
@@ -67,6 +68,7 @@ def create_app(test_config=None):
     def inject_base_url():
         return {
             "BASE_URL": app.config.get("BASE_URL", ""),
+            "JOOMLA_BASE_URL": app.config.get("JOOMLA_BASE_URL", ""),
             "APPLICATION_BASE": app.config.get("APPLICATION_BASE", ""),
         }
 

@@ -1,5 +1,4 @@
 {#
-  base.html
   Site-wide base template. All other templates extend this.
 
   Blocks:
@@ -9,7 +8,8 @@
   Features:
     - Renders flashed messages as dismissible Bootstrap alerts.
     - Loads Bootstrap 5 JS bundle from CDN.
-    - Includes head.html for shared <head> content (meta, CSS, title).
+    - Includes head.html for shared <head> content.
+    - Includes Joomla header/footer only when JOOMLA_BASE_URL is configured.
 #}
 
 <!DOCTYPE html>
@@ -19,8 +19,7 @@
     {% include 'main/head.html' %}
 </head>
 
-<!-- body class used by Joomla -->
-<body class="site com_ccpbiosim wrapper-static view-ourcommunity no-layout no-task itemid-138">
+<body{% if JOOMLA_BASE_URL %} class="site com_ccpbiosim wrapper-static view-ourcommunity no-layout no-task itemid-138"{% endif %}>
 
     <!-- Alerts returned from flask -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -36,85 +35,24 @@
     {% endif %}
     {% endwith %}
 
-    <!-- Joomla header -->
-    <header class="header container-header full-width">
+    {% if JOOMLA_BASE_URL %}
+        {% include 'main/joomla_header.html' %}
+    {% endif %}
 
-        <div class="grid-child">
-            <div class="navbar-brand">
-                <a class="brand-logo" href="/">
-                    <img loading="eager" decoding="async" src="https://dev.ccpbiosim.ac.uk/images/logos/CCPBioSim-logo-light.svg" alt="CCPBioSim" width="151" height="150"> </a>
-            </div>
-        </div>
-
-        <div class="grid-child container-nav">
-
-            <nav class="navbar navbar-expand-lg" aria-label="Nav Menu">
-                <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbar1" aria-controls="navbar1" aria-expanded="false" aria-label="Toggle Navigation">
-                    <span class="icon-menu" aria-hidden="true"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbar1">
-                    <ul class="mod-menu mod-menu_dropdown-metismenu metismenu mod-list ">
-                        <li class="metismenu-item item-134 level-1 active deeper parent">
-                            <button class="mod-menu__heading nav-header mm-collapsed mm-toggler mm-toggler-nolink" aria-haspopup="true" aria-expanded="false">People</button>
-                            <ul class="mm-collapse">
-                                <li class="metismenu-item item-138 level-2 current active"><a href="/people/our-community" aria-current="page">Our Community</a></li>
-                                <li class="metismenu-item item-139 level-2"><a href="/people/core-team" >Core Team</a></li>
-                                <li class="metismenu-item item-140 level-2"><a href="/people/management-team" >Management Team</a></li>
-                                <li class="metismenu-item item-141 level-2"><a href="/people/advisory-board" >Advisory Board</a></li>
-                            </ul>
-                        </li>
-                        <li class="metismenu-item item-132 level-1"><a href="/science" >Science</a></li>
-                        <li class="metismenu-item item-405 level-1"><a href="/impact" >Impact</a></li>
-                        <li class="metismenu-item item-137 level-1"><span class="mod-menu__heading nav-header">BioSimDB</span></li>
-                        <li class="metismenu-item item-133 level-1"><a href="/software" >Software</a></li>
-                        <li class="metismenu-item item-135 level-1 deeper parent">
-                            <button class="mod-menu__heading nav-header mm-collapsed mm-toggler mm-toggler-nolink" aria-haspopup="true" aria-expanded="false">Events</button>
-                            <ul class="mm-collapse">
-                                <li class="metismenu-item item-256 level-2"><a href="/events/upcoming-events" >Upcoming Events</a></li>
-                                <li class="metismenu-item item-257 level-2"><a href="/events/past-events" >Past Events</a></li>
-                            </ul>
-                        </li>
-                        <li class="metismenu-item item-136 level-1"><a href="/training" >Training</a></li>
-                    </ul>
-                </div>
-            </nav>
-
-        </div>
-    </header>
-
-
-    <div class="site-grid">
-        <div class="grid-child container-component">
-            <div id="system-message-container" aria-live="polite"></div>
+    <div class="{% if JOOMLA_BASE_URL %}site-grid{% else %}container py-4{% endif %}">
+        <div class="{% if JOOMLA_BASE_URL %}grid-child container-component{% endif %}">
+            {% if JOOMLA_BASE_URL %}
+                <div id="system-message-container" aria-live="polite"></div>
+            {% endif %}
             <main>
-                <!-- Jinja template for webform here -->
                 {% block content %}{% endblock %}
             </main>
         </div>
     </div>
 
-    <!-- Joomla footer -->
-    <footer class="container-footer footer full-width">
-        <div class="grid-child">
-            <ul id="mod-menu110" class="mod-menu mod-list nav ">
-                <li class="nav-item item-117"><a href="#" >About</a></li>
-                <li class="nav-item item-118"><a href="/contact" >Contact</a></li>
-                <li class="nav-item item-119"><a href="/accessibility" >Accessibility</a></li>
-                <li class="nav-item item-120"><a href="/privacy" >Privacy</a></li>
-                <li class="nav-item item-184"><a href="/administrators" >Administrators</a></li>
-            </ul>
-
-        <div id="mod-custom112" class="mod-custom custom">
-            <p style="text-align: center;"><img class="float-none" style="margin-left: 10px; margin-right: 10px;" src="/images/logos/stfc-white.png" alt="STFC logo" width="300" height="77"><img class="float-none" style="margin-left: 10px; margin-right: 10px;" src="/images/logos/epsrc-white.png" alt="EPSRC logo" width="300"><img class="float-none" style="margin-left: 10px; margin-right: 10px;" src="/images/logos/cosec-white.png" alt="CoSeC logo" width="105"></p>
-            <p style="text-align: center;"><small>CCPBioSim acknowledges the funding support it receives from UKRI - EPSRC through an SLA with Scientific Computing at UKRI - STFC </small></p>
-        </div>
-
-        </div>
-    </footer>
-
-    <a href="#top" id="back-top" class="back-to-top-link" aria-label="Back to Top">
-    <span class="icon-arrow-up icon-fw" aria-hidden="true"></span>
-    </a>
+    {% if JOOMLA_BASE_URL %}
+        {% include 'main/joomla_footer.html' %}
+    {% endif %}
 
     <!-- bootstrap js for webform -->
     {% block scripts %}

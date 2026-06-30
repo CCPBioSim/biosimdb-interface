@@ -74,7 +74,7 @@ def webform():
                 )
 
             if action == "submit":
-                save_pending_submission()
+                save_pending_submission(json_form)
                 if not token:
                     session["post_login_redirect"] = url_for("form.resume_submit")
                     return redirect(url_for("login.login"))

@@ -62,7 +62,7 @@ def prepare_for_invenio(form_data, tmpdir):
     return draft_id
 
 
-def save_pending_submission():
+def save_pending_submission(json_form=None):
     """Save uploaded files and form data to a temp directory for post-login submission.
 
     Stores uploaded files in a new temporary directory and saves the form data and
@@ -77,5 +77,11 @@ def save_pending_submission():
         for file in request.files.getlist(field):
             if file.filename:
                 file.save(os.path.join(tmpdir, secure_filename(file.filename)))
+
+    if json_form is not None:
+        json_path = os.path.join(tmpdir, "simulation_metadata.json")
+        with open(json_path, "w") as f:
+            json.dump(json_form, f, indent=2)
+
     session["pending_form_data"] = request.form.to_dict(flat=False)
     session["pending_files_dir"] = tmpdir

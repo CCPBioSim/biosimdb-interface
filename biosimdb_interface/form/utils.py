@@ -3,7 +3,7 @@
 import copy
 import re
 
-from biosimdb_interface.schema.invenio import INVENIO_DSMD_TEMPLATE, INVENIO_FORM_EMPTY
+from biosimdb_interface.schema.invenio import INVENIO_FORM_EMPTY
 from biosimdb_interface.schema.webform import get_simulation_metadata
 
 
@@ -18,8 +18,8 @@ def fill_invenio_metadata(form_data):
     """
     invenio_data = copy.deepcopy(INVENIO_FORM_EMPTY)
     # invenio_data["custom_fields"]["dsmd"] = [form_data]
-    # temporarily use dsmd template for testing
-    invenio_data["custom_fields"]["dsmd"] = [INVENIO_DSMD_TEMPLATE]
+    # exclude dsmd template until updated to new schema
+    # invenio_data["custom_fields"]["dsmd"] = [INVENIO_DSMD_TEMPLATE]
     # add generated keywords
     # add generated subjects
 

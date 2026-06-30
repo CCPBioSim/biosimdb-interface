@@ -24,11 +24,13 @@ from .validation import validate_with_mdanalysis
 
 @form_bp.route("/webform", methods=["GET", "POST"])
 def webform():
-    """Render the metadata submission form and handle save/submit actions.
+    """Render the metadata form and handle save/submit actions.
 
-    On GET, renders the empty form. On POST, validates uploaded files with
-    MDAnalysis, then either downloads form data as JSON (save) or initiates
-    submission to BioSimDB (submit).
+    On POST, validates uploaded files, converts submitted metadata to standard
+    units, removes empty fields, and validates the result against the BioSim
+    schema. ``save`` returns the validated JSON to the browser. ``submit`` saves
+    uploaded files plus the validated JSON for deferred Invenio upload, then
+    starts login if needed.
     """
     token = session.get("access_token")
 

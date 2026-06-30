@@ -67,6 +67,11 @@ def save_pending_submission(json_form=None):
 
     Stores uploaded files in a new temporary directory and saves the form data and
     directory path in the Flask session so the submission can be resumed after OAuth login.
+    If provided, the converted and validated BioSim metadata JSON is also saved
+    there as ``biosim_metadata.json`` so it is uploaded with the record files.
+
+    Args:
+        json_form: Optional converted and validated BioSim metadata dictionary.
 
     Side effects:
         session["pending_form_data"]: Set to the submitted form data as a dict.

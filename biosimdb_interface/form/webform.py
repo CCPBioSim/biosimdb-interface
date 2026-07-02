@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 
+import requests
 from biosim_extractor.metadata.convertpopulated import convert_populated_metadata_units
 from biosim_extractor.metadata.validatemetadata import validate_metadata
 from flask import (
@@ -13,11 +14,16 @@ from flask import (
     session,
     url_for,
 )
+from werkzeug.datastructures import ImmutableMultiDict
 
 from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_metadata
 
 from . import form_bp
-from .upload import prepare_for_invenio, save_pending_submission
+from .upload import (
+    extract_uploaded_file_metadata,
+    prepare_for_invenio,
+    save_pending_submission,
+)
 from .utils import form_to_json, remove_empty_fields
 from .validation import validate_with_mdanalysis
 
@@ -56,6 +62,9 @@ def webform():
 
             # convert to standard units
             json_form = convert_populated_metadata_units(json_form)
+
+            if action == "save":
+                json_form["files"] = extract_uploaded_file_metadata()
 
             # NOTE: note used yet, could be used to validate extracted fields are matching what is returned from json_form
             # extracted = session.get("extracted_metadata")
@@ -119,14 +128,42 @@ def do_submit():
     Called automatically by the loading page after login. Clears pending
     session data after upload and renders the success page with the record URL.
     """
-    from werkzeug.datastructures import ImmutableMultiDict
-
     form_data = session.pop("pending_form_data", None)
     tmpdir = session.pop("pending_files_dir", None)
+
+    if not form_data or not tmpdir:
+        flash("No pending submission found. Please submit again.", "warning")
+        return redirect(url_for("form.webform"))
+
     flat_form = ImmutableMultiDict(
         [(k, v) for k, vals in form_data.items() for v in vals]
     )
-    draft_id = prepare_for_invenio(flat_form, tmpdir)
+
+    try:
+        draft_id = prepare_for_invenio(flat_form, tmpdir)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else None
+
+        if status in (401, 403):
+            session.pop("access_token", None)  # force fresh login
+            session["post_login_redirect"] = url_for("form.resume_submit")
+            flash(
+                "Your login session is no longer valid for upload. "
+                "Please sign in again and the submission will resume automatically.",
+                "warning",
+            )
+            return redirect(url_for("login.login"))
+        else:
+            session.pop("access_token", None)  # force fresh login
+            flash("Upload failed unexpectedly. Please try again.", "danger")
+
+        # keep pending_form_data and pending_files_dir for retry
+        return redirect(url_for("form.webform"))
+
+    # success: now clear pending state
+    session.pop("pending_form_data", None)
+    session.pop("pending_files_dir", None)
+
     BASE_URL = current_app.config["BASE_URL"]
     record_url = f"{BASE_URL}/uploads/{draft_id}"
     return render_template("form/submit_success.html", record_url=record_url)

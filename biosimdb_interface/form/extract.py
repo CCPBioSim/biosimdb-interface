@@ -33,6 +33,7 @@ def extract_files_validate(top_file, traj_file):
         schema_path=os.getenv("ENGINE_MAPPING_SCHEMA_PATH", ""),
         top_file=top_file,
         traj_file=traj_file,
+        store_file_metadata=False,  # not on webform so exclude
     )
 
     result = populator.populate()

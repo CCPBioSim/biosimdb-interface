@@ -40,6 +40,10 @@ exclude_patterns = []
 
 html_theme = 'furo'
 html_static_path = ['_static']
+html_theme_options = {
+    "dark_logo": "logos/biosimdb-logo-white.png",
+    "light_logo": "logos/biosimdb-logo-black.png",
+}
 
 import warnings
 warnings.filterwarnings("ignore", message="netCDF4 is not available")

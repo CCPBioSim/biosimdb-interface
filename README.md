@@ -2,8 +2,8 @@ biosimdb-interface
 ==================
 
 <p align="center">
-    <img src="docs/_static/logos/biosimdb-logo-white.png#gh-dark-mode-only" alt="biosimdb logo" width="300"/>
-    <img src="docs/_static/logos/biosimdb-logo-black.png#gh-light-mode-only" alt="biosimdb logo" width="300"/>
+    <img src="docs/source/_static/logos/biosimdb-logo-white.png#gh-dark-mode-only" alt="biosimdb logo" width="300"/>
+    <img src="docs/source/_static/logos/biosimdb-logo-black.png#gh-light-mode-only" alt="biosimdb logo" width="300"/>
 </p>
 
 A repository for extracting and uploading simulation data via a web interface to the PSDI hosted BioSimDB community data-collection.

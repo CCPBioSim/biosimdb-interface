@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 
 import copy
+import os
 import re
+import tempfile
+
+from flask import current_app
 
 from biosimdb_interface.schema.invenio import INVENIO_FORM_EMPTY
 from biosimdb_interface.schema.webform import get_simulation_metadata
+
+
+def make_upload_tmpdir(prefix):
+    upload_root = current_app.config["UPLOAD_FOLDER"]
+    os.makedirs(upload_root, exist_ok=True)
+    return tempfile.mkdtemp(prefix=prefix, dir=upload_root)
 
 
 def fill_invenio_metadata(form_data):

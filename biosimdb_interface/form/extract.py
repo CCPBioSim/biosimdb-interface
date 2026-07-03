@@ -8,12 +8,13 @@ optionally validates the result against the BioSim schema.
 """
 
 import os
-import tempfile
+import shutil
 
 from biosim_extractor.metadata.populatemetadata import MetadataPopulator
 from flask import jsonify, request, session
 
 from . import form_bp
+from .utils import make_upload_tmpdir
 
 
 def extract_files_validate(top_file, traj_file):
@@ -71,7 +72,8 @@ def extract_metadata():
         if not topology or not trajectories:
             return jsonify({"error": "Simulation files are missing."}), 400
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir = make_upload_tmpdir("biosimdb_extract_")
+        try:
             topo_path = os.path.join(temp_dir, topology.filename)
             topology.save(topo_path)
             traj_files = []
@@ -100,6 +102,8 @@ def extract_metadata():
                         "message": "Metadata extracted successfully.",
                     }
                 )
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
     except Exception as e:
         print(f"ERROR: {e}")

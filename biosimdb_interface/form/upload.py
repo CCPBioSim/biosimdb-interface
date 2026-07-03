@@ -4,14 +4,13 @@ import glob
 import json
 import os
 import shutil
-import tempfile
 
 from biosim_extractor.metadata.filemetadata import files_metadata
 from flask import current_app, request, session
 from werkzeug.utils import secure_filename
 
 from .invenio import run_record_upload
-from .utils import fill_invenio_metadata, form_to_json
+from .utils import fill_invenio_metadata, form_to_json, make_upload_tmpdir
 
 
 def _save_request_files(tmpdir):
@@ -54,7 +53,7 @@ def _save_files_and_extract_metadata(tmpdir):
 
 def extract_uploaded_file_metadata():
     """Extract file metadata from the current request's uploaded files."""
-    tmpdir = tempfile.mkdtemp(prefix="biosimdb_file_metadata_")
+    tmpdir = make_upload_tmpdir("biosimdb_file_metadata_")
     try:
         _, file_meta = _save_files_and_extract_metadata(tmpdir)
         return file_meta
@@ -109,7 +108,7 @@ def save_pending_submission(json_form=None):
         session["pending_files_dir"]: Set to temporary directory path containing
             uploaded files and optional ``simulation_metadata.json``.
     """
-    tmpdir = tempfile.mkdtemp(prefix="biosimdb_pending_")
+    tmpdir = make_upload_tmpdir("biosimdb_pending_")
     _, file_meta = _save_files_and_extract_metadata(tmpdir)
 
     if json_form is not None:

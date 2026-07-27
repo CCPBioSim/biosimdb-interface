@@ -1,5 +1,5 @@
-Contributing
-============
+Contributing to biosimdb-interface
+==================================
 
 We welcome contributions. This page covers how to set up a development
 environment, run tests, lint code, and build the documentation.

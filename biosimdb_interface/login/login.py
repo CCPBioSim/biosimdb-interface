@@ -10,6 +10,40 @@ from flask import current_app, redirect, request, session, url_for
 from . import bp
 
 
+def _fetch_user_email(access_token: str):
+    """
+    The function calls the configured user endpoint using the provided OAuth2
+    access token and returns the email address when present in the response.
+
+    Args:
+        access_token (str): OAuth2 bearer token for the authenticated user.
+
+    Returns:
+        str | None: User email if found, otherwise None.
+    """
+    api_base = current_app.config.get("API_BASE", "").rstrip("/")
+    urls = [f"{api_base}/me"]
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    for url in urls:
+        try:
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                continue
+
+            data = resp.json()
+
+            if isinstance(data, dict):
+                if data.get("email"):
+                    return data["email"]
+
+        except Exception:
+            continue
+
+    return None
+
+
 def authz_url() -> str:
     """
     Build the OAuth2 authorization URL with a secure random state parameter.
@@ -79,6 +113,7 @@ def callback():
             "client_id": current_app.config["CLIENT_ID"],
             "client_secret": current_app.config["CLIENT_SECRET"],
         },
+        timeout=10,
     )
 
     token_json = token_response.json()
@@ -89,6 +124,14 @@ def callback():
 
     # save the access token in session so we know the user is logged in
     session["access_token"] = token_json["access_token"]
+
+    # Try to fetch user email and store it in session for display
+    email = _fetch_user_email(token_json["access_token"])
+    if email:
+        session["user_email"] = email
+    else:
+        session.pop("user_email", None)
+
     next_url = session.pop("post_login_redirect", url_for("form.webform"))
     return redirect(next_url)
 
@@ -102,6 +145,7 @@ def logout():
         Response: Redirect to the webform.
     """
     session.pop("access_token", None)
+    session.pop("user_email", None)
     return redirect(url_for("form.webform"))
 
 

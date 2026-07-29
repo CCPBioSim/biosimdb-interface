@@ -35,7 +35,11 @@
         <a href="{{ BASE_URL }}/communities/biosimdb" target="_blank" class="btn btn-sm btn-outline-primary">BioSimDB ↗</a>
         <!-- <h2 class="mb-0 position-absolute start-50 translate-middle-x">Data Extraction & Submission Form</h2> -->
         {% if session.get('access_token') %}
-            <a href="{{ url_for('login.logout') }}" class="btn btn-sm btn-outline-secondary ms-auto">Log out</a>
+            <a href="{{ url_for('login.logout') }}" class="btn btn-sm btn-outline-secondary ms-auto">Log out
+                {% if session.get('user_email') %}
+                    {{ session.get('user_email') }}
+                {% endif %}
+            </a>
         {% else %}
             <a href="{{ url_for('login.login') }}" class="btn btn-sm btn-outline-primary ms-auto">Log in</a>
         {% endif %}

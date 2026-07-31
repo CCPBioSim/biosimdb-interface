@@ -1,0 +1,8 @@
+.. Color profiles for Sphinx.
+.. Has to be used with styles.css
+
+.. role:: sso
+   :class: sso
+
+.. role:: manual
+   :class: manual

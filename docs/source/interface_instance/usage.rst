@@ -19,7 +19,7 @@ Workflow
 4. **Save or submit**:
 
    - *Save Metadata* downloads the metadata as a ``simulation_metadata.json`` file.
-   - *Submit to BioSimDB* validates the metadata against the BioSim schema and uploads it to BioSimDB, redirecting you to the created record.
+   - *Submit to BioSimDB* validates the metadata against the BioSim schema and uploads it to BioSimDB, redirecting you to the created draft record.
 
 Authentication
 --------------

@@ -44,6 +44,9 @@ html_theme_options = {
     "dark_logo": "logos/biosimdb-logo-white.png",
     "light_logo": "logos/biosimdb-logo-black.png",
 }
+html_css_files = [
+    'styles.css',
+]
 
 import warnings
 warnings.filterwarnings("ignore", message="netCDF4 is not available")

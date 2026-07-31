@@ -100,13 +100,13 @@ def save_pending_submission(json_form=None):
 
     Args:
         json_form: Optional converted/validated BioSim metadata dictionary to
-            persist alongside uploaded files. When provided, file metadata is
-            added before writing.
+        persist alongside uploaded files. When provided, file metadata is
+        added before writing.
 
     Side effects:
         session["pending_form_data"]: Set to submitted form data (dict of lists).
         session["pending_files_dir"]: Set to temporary directory path containing
-            uploaded files and optional ``simulation_metadata.json``.
+        uploaded files and optional ``simulation_metadata.json``.
     """
     tmpdir = make_upload_tmpdir("biosimdb_pending_")
     _, file_meta = _save_files_and_extract_metadata(tmpdir)

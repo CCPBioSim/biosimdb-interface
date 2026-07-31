@@ -1,0 +1,11 @@
+
+/* Colors and text decoration.
+ For example, :black:`text in black` or :blink:`text blinking` in rST. */
+
+.sso {
+    color: #398e01;
+}
+
+.manual {
+    color: #e17c00;
+}

@@ -26,10 +26,8 @@ hosted by PSDI.
    :maxdepth: 2
    :caption: Contents:
 
-   installation
-   configuration
-   oauth
-   usage
+   biosimdb_intro
+   interface_instance_intro
    contributing
    api
 

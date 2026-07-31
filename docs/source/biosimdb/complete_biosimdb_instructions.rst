@@ -2,7 +2,7 @@
 ===============================
 
 Once you have submitted a record to BioSimDB via the "BioSim Data Extraction & Submission Form", your
-draft submission will be available in `data-collections <https://data-collections.psdi.ac.uk/>`_ in the "My dashboard" section under uploads, in a URL like this: https://data-collections.psdi.ac.uk/uploads/XXXXX-XXXXX, where ``XXXXX-XXXXX`` is your draft record ID.
+draft submission will be available in `data-collections <https://data-collections.psdi.ac.uk/>`_ in the "My dashboard" section under "Uploads", in a URL like this: https://data-collections.psdi.ac.uk/uploads/XXXXX-XXXXX, where ``XXXXX-XXXXX`` is your draft record ID.
 
 .. image:: ../_static/biosimdb/0_uploads.png
    :width: 600
@@ -15,7 +15,7 @@ The next step is to submit your data for review to be published to BioSimDB.
 Filling the BioSimDB Submission Form
 ------------------------------------
 
-You should see the simulation files and metadata uploaded from the "BioSim Data Extraction & Submission Form" form in your draft submission:
+You should see the simulation files and metadata uploaded via the "BioSim Data Extraction & Submission Form" in your draft submission:
 
 .. image:: ../_static/biosimdb/1_files.png
    :width: 600
@@ -43,8 +43,8 @@ The rest of the form allows users to provide non-technical information about the
         :align: center
 
     7. Include information of funding that enabled data to be produced.
-    8. If have published your data elsewhere, add identifiers to these here.
-    9. Include identifiers of any work that has used the simulation data in your record.
+    8. If you have published your data elsewhere, add identifiers to these here.
+    9. Include identifiers of any work that has used the simulation data.
 
     .. image:: ../_static/biosimdb/4_funding.png
         :width: 600
@@ -56,8 +56,10 @@ Once you are happy with the information you have provided, please submit your da
     :width: 400
     :align: center
 
-You will see a pop-up box to confirm your submission and include an optional message to BioSimDB curators.
+You will see a pop-up box to confirm your submission and include an optional message to BioSimDB community curators.
 
 .. image:: ../_static/biosimdb/6_review.png
     :width: 400
     :align: center
+
+The next step is the review process for your submitted record.

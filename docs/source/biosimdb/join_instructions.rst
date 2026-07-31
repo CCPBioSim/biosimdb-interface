@@ -1,12 +1,12 @@
 .. include:: ../.special.rst
 
-Join the BioSimDB Community
-===========================
+1. Join the BioSimDB Community
+==============================
 
 To upload data to `BioSimDB <https://data-collections.psdi.ac.uk/communities/biosimdb/>`_, users must first join the BioSimDB community hosted by `PSDI <https://www.psdi.ac.uk/>`_ , by following the steps below.
 
-1. PSDI Data Collection Login
------------------------------
+a). PSDI Data Collection Login
+------------------------------
 
 Head to the `PSDI data collections website <https://data-collections.psdi.ac.uk/>`_ and click on the login button:
 
@@ -14,13 +14,13 @@ Head to the `PSDI data collections website <https://data-collections.psdi.ac.uk/
    :width: 800
    :align: center
 
-2. Account Creation
--------------------
+b). Account Creation
+--------------------
 
 There are two routes for creating a PSDI account, we strongly advise to use route 2a. to avoid delays in creating your account. Where this is not possible, please follow option 2b.
 
-2a. :sso:`SSO via Institution`
-++++++++++++++++++++++++++++++
+b) (i). :sso:`SSO via Institution`
+++++++++++++++++++++++++++++++++++
 
 If you belong to a UK research institution, click on the "UK Institution Sign in" button to use SSO via your institution.
 This is the quickest and preferred method for accessing PSDI Community Data Collections.
@@ -37,8 +37,8 @@ Find your UK research institution from the dropdown list, you will be redirected
 
 If step 2a. has been successful for you, congratulations! Please skip step 2b. and move onto step 3.
 
-2b. :manual:`Manual Registration`
-+++++++++++++++++++++++++++++++++
+b) (ii). :manual:`Manual Registration`
+++++++++++++++++++++++++++++++++++++++
 
 .. note::
     Only register manually for an account if you do not find your institution listed. If your institution is listed and you have trouble logging in, please contact PSDI support directly instead of registering manually.
@@ -57,8 +57,11 @@ Fill in the short webform with your details and click register.
 
 If successful, you will receive an email from PSDI to the email address you have manually registered with, requesting confirmation of your account. Please note, this may take a few hours to be processed. Is there are any further delays, please contact PSDI support directly.
 
-3. BioSimDB Community Membership
---------------------------------
+c). BioSimDB Community Membership
+---------------------------------
+
+.. note::
+    The process for joining the BioSimDB community may change and become more streamlined in the future. Please follow the steps below at present.
 
 Once you have successfully logged into PSDI community data collections, you can request membership specifically to the `BioSimDB community <https://data-collections.psdi.ac.uk/communities/biosimdb/>`_.
 

@@ -1,5 +1,5 @@
-Submit Data to BioSimDB
-=======================
+2. Submit Data to BioSimDB
+==========================
 
 The ``biosimdb-interface`` is hosted as a webform, which automatically extracts useful data that describes a molecular dynamics simulation. Whenever you share your data, include this metadata with the simulation files to make your data more findable, accessible, interoperable and reuseable (`FAIR <https://www.go-fair.org/fair-principles/>`_).
 
@@ -25,13 +25,21 @@ Steps to Extract Simulation Metadata
 3. Once you have extracted metadata, the webform fields are enabled, allowing you to manually populate any missing terms you wish to fill.
 
     - Click on each field name for further information about data field requirements.
+    - Each field is validated againset the schema when a user clicks to download or submit data. If there are any deviations from accepted terms, the errors will be displayed a the top of the webform.
 
 4. Two options are available for your extracted simulation metadata:
 
     4a. Download the simulation metadata as a json file and share alongside simulation files.
 
-    4b. Submit your simulation files and metadata in one step to BioSimDB, you will be directed to a login page and asked to authorize this application. Please continue and complete the data submission process in BioSimDB.
+    4b. Submit your simulation files and metadata in one step to BioSimDB, you will be directed to a login page and asked to authorize this application.
+
+    .. image:: ../_static/interface/authorise.png
+        :width: 400
+        :align: center
+
+
+    Please click on "View Record" to continue and complete the data submission process in BioSimDB.
 
     .. image:: ../_static/interface/record_success.png
-        :width: 800
+        :width: 400
         :align: center

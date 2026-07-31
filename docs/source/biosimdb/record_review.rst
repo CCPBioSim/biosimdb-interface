@@ -17,7 +17,7 @@ Each field in the submission form will be checked for validity. In the interest 
 - Metadata - The simulation metadata will be regenerated and compared with the submitted metadata. Any discrepancies in auto-generated fields will be highlighted and discussed.
 - Title - Checked for relevance to the system composition and science.
 - Description - Checked for the inclusion of scientific motivations and significant results from producing the trajectories.
-- Related works - Confirmed with the submitter that all publications that use the data are included in related works.
+- Related works - Confirmed with the submitter that any publications using the data are included.
 
 We aim to keep the review process light-touch and as permissive as possible.
 
@@ -36,4 +36,4 @@ When you click on a request, you will see a text box to add comments and replies
     :width: 800
     :align: center
 
-Once changes have been agreed, congratulations! Your submission will be published to BioSimDB and be accessible to everyone. Please share your data and include in any publications, if applicable.
+Once changes have been agreed, congratulations! Your submission will be published to BioSimDB and be accessible to everyone. Please share the link to your data and include in any publications, if applicable.

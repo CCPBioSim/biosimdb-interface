@@ -17,21 +17,21 @@ Steps to Extract Simulation Metadata
 
     - Optionally, upload an `aiida archive file <https://aiida-gromacs.readthedocs.io/>`_ containing the simulation provenance to extract further information about the simulation protocol.
     - Multiple trajectory files can be uploaded with a single associated topology file, both file types are required.
-    - Various simulation file formats are accepted and read using MDAnalysis, please ensure your files are compatible.
-    - This form uses the biosim-schema to define and group BioSim metadata. Missing terms or units? Please considering raising an issue or contributing to the `schema <https://biosim-schema.readthedocs.io/>`_.
+    - Various simulation file formats are accepted, provided they can be read using `MDAnalysis <https://www.mdanalysis.org/>`_, please ensure your files are compatible.
+    - This form uses the `biosim-schema <https://biosim-schema.readthedocs.io/>`_ to define and group BioSim metadata. Missing terms or units? Please considering raising an issue or contributing to the `schema <https://github.com/CCPBioSim/biosim-schema/>`_.
 
 2. Click "Extract Metadata", this will automatically populate applicable files in the webform.
 
 3. Once you have extracted metadata, the webform fields are enabled, allowing you to manually populate any missing terms you wish to fill.
 
     - Click on each field name for further information about data field requirements.
-    - Each field is validated againset the schema when a user clicks to download or submit data. If there are any deviations from accepted terms, the errors will be displayed a the top of the webform.
+    - Each field is validated against the schema, each time a user clicks to download or submit data. If there are any deviations from accepted terms, the errors will be displayed at the top of the webform.
 
 4. Two options are available for your extracted simulation metadata:
 
-    4a. Download the simulation metadata as a json file and share alongside simulation files.
+    4a). Download the simulation metadata as a json file and share alongside simulation files.
 
-    4b. Submit your simulation files and metadata in one step to BioSimDB, you will be directed to a login page and asked to authorize this application.
+    4b). Submit your simulation files and metadata in one step to BioSimDB, you will be directed to a login page and asked to authorize this application, once you are logged in.
 
     .. image:: ../_static/interface/authorise.png
         :width: 400

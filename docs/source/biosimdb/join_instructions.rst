@@ -17,7 +17,7 @@ Head to the `PSDI data collections website <https://data-collections.psdi.ac.uk/
 b). Account Creation
 --------------------
 
-There are two routes for creating a PSDI account, we strongly advise to use route 2a. to avoid delays in creating your account. Where this is not possible, please follow option 2b.
+There are two routes for creating a PSDI account, we strongly advise to use route (i). to avoid delays in creating your account. Where this is not possible, please follow option (ii).
 
 b) (i). :sso:`SSO via Institution`
 ++++++++++++++++++++++++++++++++++
@@ -29,13 +29,13 @@ This is the quickest and preferred method for accessing PSDI Community Data Coll
    :width: 600
    :align: center
 
-Find your UK research institution from the dropdown list, you will be redirected to your institution to login via your institutional credentials
+Find your UK research institution from the dropdown list, you will be redirected to your institution to login via your institutional credentials.
 
 .. image:: ../_static/psdi/2a_SSO.png
    :width: 500
    :align: center
 
-If step 2a. has been successful for you, congratulations! Please skip step 2b. and move onto step 3.
+If step (i). has been successful for you, congratulations! Please skip step (ii). and move onto step c).
 
 b) (ii). :manual:`Manual Registration`
 ++++++++++++++++++++++++++++++++++++++
@@ -55,7 +55,7 @@ Fill in the short webform with your details and click register.
    :width: 300
    :align: center
 
-If successful, you will receive an email from PSDI to the email address you have manually registered with, requesting confirmation of your account. Please note, this may take a few hours to be processed. Is there are any further delays, please contact PSDI support directly.
+If successful, you will receive an email from PSDI, requesting confirmation of your account, to the email address you have manually registered with. Please note, this may take a few hours to be processed. If there are any further delays, please contact PSDI support directly.
 
 c). BioSimDB Community Membership
 ---------------------------------

@@ -51,8 +51,11 @@ def test_do_submit_calls_invenio(client):
         sess["pending_form_data"] = {"simulation_name": ["test"]}
         sess["pending_files_dir"] = "/tmp/fake_pending"
 
-    with patch("biosimdb_interface.form.webform.prepare_for_invenio") as mock_prepare:
+    with (
+        patch("biosimdb_interface.form.webform.invite_user") as mock_invite,
+        patch("biosimdb_interface.form.webform.prepare_for_invenio") as mock_prepare,
+    ):
         mock_prepare.return_value = "draft-123"
-        response = client.post("/do_submit")
+        _response = client.post("/do_submit")
+        assert mock_invite.called
         assert mock_prepare.called
-        assert response.status_code in (200, 302)

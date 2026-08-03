@@ -16,6 +16,7 @@ from flask import (
 )
 from werkzeug.datastructures import ImmutableMultiDict
 
+from biosimdb_interface.login.community_invite import invite_user
 from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_metadata
 
 from . import form_bp
@@ -125,8 +126,10 @@ def resume_submit():
 @form_bp.route("/do_submit", methods=["POST"])
 def do_submit():
     """Execute the deferred Invenio upload using session-stored form data.
-    Called automatically by the loading page after login. Clears pending
-    session data after upload and renders the success page with the record URL.
+    Called automatically by the loading page after login.
+    Automatically invite user to Invenio instance community, then submit.
+    Clears pending session data after upload and renders the success page
+    with the record URL.
     """
     form_data = session.pop("pending_form_data", None)
     tmpdir = session.pop("pending_files_dir", None)
@@ -140,6 +143,8 @@ def do_submit():
     )
 
     try:
+        token = session.get("access_token")
+        invite_user("biosimdb", token)
         draft_id = prepare_for_invenio(flat_form, tmpdir)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else None

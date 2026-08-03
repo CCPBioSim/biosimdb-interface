@@ -16,7 +16,7 @@ from flask import (
 )
 from werkzeug.datastructures import ImmutableMultiDict
 
-from biosimdb_interface.login.invite_community_reader import invite_user
+from biosimdb_interface.login.community_invite import invite_user
 from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_metadata
 
 from . import form_bp

@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+today = datetime.now(ZoneInfo("Europe/London")).date()
+
 INVENIO_FORM_EMPTY = {
     "access": {"files": "public", "record": "public"},
     "files": {"enabled": "true"},
@@ -24,11 +31,11 @@ INVENIO_FORM_EMPTY = {
                 "identifier": "",  # add publication DOI here
             }
         ],
-        "publication_date": "",  # YYYY-MM-DD
+        "publication_date": today.isoformat(),  # YYYY-MM-DD
         "publisher": "PSDI",
         "resource_type": {
             # "id": "dataset"
-            "id": "model"  # for testing in staging
+            "id": "model"
         },
         "rights": [{"id": "cc-by-4.0"}],
         "subjects": [

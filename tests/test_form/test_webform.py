@@ -1,3 +1,6 @@
+import json
+import os
+import tempfile
 from unittest.mock import patch
 
 
@@ -51,9 +54,12 @@ def test_submit_with_token_renders_loading(client):
 
 def test_resume_submit_with_pending_data(client):
     """resume_submit renders loading page when session has pending submission."""
+    tmpdir = tempfile.mkdtemp()
+    with open(os.path.join(tmpdir, "pending_form_data.json"), "w") as f:
+        json.dump({"x": ["y"]}, f)
+
     with client.session_transaction() as sess:
         sess["access_token"] = "tok"
-        sess["pending_form_data"] = {"x": ["y"]}
-        sess["pending_files_dir"] = "/tmp/fake"
+        sess["pending_files_dir"] = tmpdir
     response = client.get("/resume_submit")
     assert response.status_code == 200

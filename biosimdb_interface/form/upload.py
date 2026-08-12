@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import glob
 import json
 import os
 import shutil
@@ -11,6 +10,42 @@ from werkzeug.utils import secure_filename
 
 from .invenio import run_record_upload
 from .utils import fill_invenio_metadata, form_to_json, make_upload_tmpdir
+
+PENDING_FORM_FILENAME = "pending_form_data.json"
+PENDING_UPLOADS_FILENAME = "pending_uploads.json"
+SIM_METADATA_FILENAME = "simulation_metadata.json"
+
+INTERNAL_TMP_FILENAMES = {
+    PENDING_FORM_FILENAME,
+    PENDING_UPLOADS_FILENAME,
+    "metadata.json",
+}
+
+
+def _pending_form_path(tmpdir):
+    return os.path.join(tmpdir, PENDING_FORM_FILENAME)
+
+
+def _pending_uploads_path(tmpdir):
+    return os.path.join(tmpdir, PENDING_UPLOADS_FILENAME)
+
+
+def _flatten_saved_files(saved_files):
+    return [p for paths in saved_files.values() for p in paths]
+
+
+def _load_pending_upload_paths(tmpdir):
+    path = _pending_uploads_path(tmpdir)
+    with open(path) as f:
+        saved_files = json.load(f)
+    files = [p for p in _flatten_saved_files(saved_files) if os.path.isfile(p)]
+
+    # Optional: keep this if simulation_metadata.json must be included in record files
+    sim_meta_path = os.path.join(tmpdir, SIM_METADATA_FILENAME)
+    if os.path.isfile(sim_meta_path):
+        files.append(sim_meta_path)
+
+    return files
 
 
 def _save_request_files(tmpdir):
@@ -104,20 +139,25 @@ def save_pending_submission(json_form=None):
         added before writing.
 
     Side effects:
-        session["pending_form_data"]: Set to submitted form data (dict of lists).
         session["pending_files_dir"]: Set to temporary directory path containing
-        uploaded files and optional ``simulation_metadata.json``.
+        uploaded files plus persisted JSON payloads used after login.
     """
     tmpdir = make_upload_tmpdir("biosimdb_pending_")
-    _, file_meta = _save_files_and_extract_metadata(tmpdir)
+    saved_files, file_meta = _save_files_and_extract_metadata(tmpdir)
+
+    # Persist exact user-uploaded paths for later allowlist upload
+    with open(_pending_uploads_path(tmpdir), "w") as f:
+        json.dump(saved_files, f)
 
     if json_form is not None:
         json_form["files"] = file_meta
-        json_path = os.path.join(tmpdir, "simulation_metadata.json")
+        json_path = os.path.join(tmpdir, SIM_METADATA_FILENAME)
         with open(json_path, "w") as f:
             json.dump(json_form, f, indent=2)
 
-    session["pending_form_data"] = request.form.to_dict(flat=False)
+    with open(_pending_form_path(tmpdir), "w") as f:
+        json.dump(request.form.to_dict(flat=False), f)
+
     session["pending_files_dir"] = tmpdir
 
 
@@ -137,9 +177,8 @@ def prepare_for_invenio(form_data, tmpdir):
         metadata_path = os.path.join(tmpdir, "metadata.json")
         with open(metadata_path, "w") as f:
             json.dump(invenio_data, f, indent=2)
-        file_paths = [
-            p for p in glob.glob(os.path.join(tmpdir, "*")) if p != metadata_path
-        ]
+
+        file_paths = _load_pending_upload_paths(tmpdir)
         _, draft_id = _data_collections_upload(metadata_path, file_paths)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)

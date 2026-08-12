@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 import os
 
 import requests
@@ -67,7 +68,7 @@ def webform():
             if action == "save":
                 json_form["files"] = extract_uploaded_file_metadata()
 
-            # NOTE: note used yet, could be used to validate extracted fields are matching what is returned from json_form
+            # NOTE: note used yet, could be used to validate extracted fields are matching what is returned from json_form, cookie size increases though
             # extracted = session.get("extracted_metadata")
 
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
@@ -117,7 +118,11 @@ def resume_submit():
     """
     if not session.get("access_token"):
         return redirect(url_for("login.login"))
-    if not session.get("pending_form_data") or not session.get("pending_files_dir"):
+    tmpdir = session.get("pending_files_dir")
+    pending_form_path = (
+        os.path.join(tmpdir, "pending_form_data.json") if tmpdir else None
+    )
+    if not tmpdir or not pending_form_path or not os.path.isfile(pending_form_path):
         flash("No pending submission found.", "warning")
         return redirect(url_for("form.webform"))
     return render_template("form/loading.html")
@@ -131,12 +136,19 @@ def do_submit():
     Clears pending session data after upload and renders the success page
     with the record URL.
     """
-    form_data = session.pop("pending_form_data", None)
     tmpdir = session.pop("pending_files_dir", None)
 
-    if not form_data or not tmpdir:
+    if not tmpdir:
         flash("No pending submission found. Please submit again.", "warning")
         return redirect(url_for("form.webform"))
+
+    pending_form_path = os.path.join(tmpdir, "pending_form_data.json")
+    if not os.path.isfile(pending_form_path):
+        flash("No pending submission found. Please submit again.", "warning")
+        return redirect(url_for("form.webform"))
+
+    with open(pending_form_path) as f:
+        form_data = json.load(f)
 
     flat_form = ImmutableMultiDict(
         [(k, v) for k, vals in form_data.items() for v in vals]
@@ -166,7 +178,6 @@ def do_submit():
         return redirect(url_for("form.webform"))
 
     # success: now clear pending state
-    session.pop("pending_form_data", None)
     session.pop("pending_files_dir", None)
 
     BASE_URL = current_app.config["BASE_URL"]

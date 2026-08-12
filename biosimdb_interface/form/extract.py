@@ -11,7 +11,7 @@ import os
 import shutil
 
 from biosim_extractor.metadata.populatemetadata import MetadataPopulator
-from flask import jsonify, request, session
+from flask import jsonify, request
 
 from . import form_bp
 from .utils import make_upload_tmpdir
@@ -86,7 +86,7 @@ def extract_metadata():
             result, validation_errors = extract_files_validate(topo_path, traj_files)
 
             # Keep authoritative extracted payload on the server
-            session["extracted_metadata"] = result
+            # session["extracted_metadata"] = result
 
             if len(validation_errors) > 0:
                 return jsonify(

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Upload helpers for deferred BioSimDB submission and Invenio transfer."""
 
 import json
 import os
@@ -23,18 +24,57 @@ INTERNAL_TMP_FILENAMES = {
 
 
 def _pending_form_path(tmpdir):
+    """Return the path to the persisted pending form payload JSON.
+
+    Args:
+    tmpdir (str): Temporary directory containing pending submission artifacts.
+
+    Returns:
+    str: Path to file.
+    """
     return os.path.join(tmpdir, PENDING_FORM_FILENAME)
 
 
 def _pending_uploads_path(tmpdir):
+    """Return the path to the persisted uploaded-files manifest JSON.
+
+    Args:
+    tmpdir (str): Temporary directory containing pending submission artifacts.
+
+    Returns:
+    str: Path to file.
+    """
     return os.path.join(tmpdir, PENDING_UPLOADS_FILENAME)
 
 
 def _flatten_saved_files(saved_files):
+    """Flatten a role-to-path mapping into a single file path list.
+
+    Args:
+    saved_files (dict[str, list[str]]): Mapping of file role to saved file paths.
+
+    Returns:
+    list[str]: Flattened list of saved file paths.
+    """
     return [p for paths in saved_files.values() for p in paths]
 
 
 def _load_pending_upload_paths(tmpdir):
+    """Load allowed upload file paths for deferred submission.
+
+    Reads the persisted uploads manifest and returns existing files only.
+    If simulation_metadata.json exists, it is appended to the upload list.
+
+    Args:
+    tmpdir (str): Temporary directory containing pending submission artifacts.
+
+    Returns:
+    list[str]: File paths that should be uploaded to Invenio.
+
+    Raises:
+    FileNotFoundError: If pending_uploads.json is missing.
+    json.JSONDecodeError: If pending_uploads.json is not valid JSON.
+    """
     path = _pending_uploads_path(tmpdir)
     with open(path) as f:
         saved_files = json.load(f)
@@ -123,24 +163,20 @@ def _data_collections_upload(metadata_path, files_path):
 
 
 def save_pending_submission(json_form=None):
-    """Save uploaded files and form data for deferred post-login submission.
+    """Persist uploaded files and form payload for post-login submission resume.
 
-    Writes uploaded request files to a new temporary directory, computes file
-    metadata from those saved files, and stores pending submission state in the
-    Flask session so submission can resume after OAuth login.
-
-    If ``json_form`` is provided, this function attaches the computed file
-    metadata under ``json_form["files"]`` and writes the result to
-    ``simulation_metadata.json`` in the temporary directory.
+    Saves uploaded request files into a temp directory, writes a manifest of
+    allowed upload paths, optionally writes simulation_metadata.json, and stores
+    the form payload as pending_form_data.json.
 
     Args:
-        json_form: Optional converted/validated BioSim metadata dictionary to
-        persist alongside uploaded files. When provided, file metadata is
-        added before writing.
+    json_form (dict | None): Validated BioSim metadata to persist. When
+    provided, file metadata is attached at json_form["files"] before
+    writing simulation_metadata.json.
 
-    Side effects:
-        session["pending_files_dir"]: Set to temporary directory path containing
-        uploaded files plus persisted JSON payloads used after login.
+    Side Effects:
+    Writes JSON artifacts under tmpdir.
+    Sets session["pending_files_dir"].
     """
     tmpdir = make_upload_tmpdir("biosimdb_pending_")
     saved_files, file_meta = _save_files_and_extract_metadata(tmpdir)
@@ -162,14 +198,18 @@ def save_pending_submission(json_form=None):
 
 
 def prepare_for_invenio(form_data, tmpdir):
-    """Convert form data and upload files from tmpdir to Invenio. Cleans up tmpdir.
+    """Create Invenio metadata and upload allowlisted files from tmpdir.
 
     Args:
-        form_data: Flat form data (ImmutableMultiDict or similar) from the webform submission.
-        tmpdir: Path to temporary directory containing uploaded simulation files.
+    form_data (ImmutableMultiDict | Mapping): Submitted webform payload.
+    tmpdir (str): Temporary directory containing pending files and manifests.
 
     Returns:
-        draft_id: The Invenio draft record ID of the created upload.
+    draft_id (str): Created Invenio draft record ID.
+
+    Side Effects:
+    Writes metadata.json in tmpdir.
+    Deletes tmpdir on exit.
     """
     try:
         json_form = form_to_json(form_data)

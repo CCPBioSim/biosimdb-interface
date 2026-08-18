@@ -1,114 +1,96 @@
-/* Variables */
+/* ============================================================
+   BioSimDB Theme Tokens
+   - Keep all shared color decisions in one place.
+   - home.css and webform.css consume these variables.
+   ============================================================ */
+
 :root {
-    --background-color: rgb(7, 64, 121);
-    --bg-light: #f8f9fa;
-    --psdi-color: #041e42;
-    --hover-color: #0154c92b;
-    --link-color: #b369fd;
-    --highlight-color: #e2fffeb2;
-    --hide-color: #ffd0c59c;
-    --text-color: black;
-    --ref-color: #236efa;
-    --font-family: monospace;
-    --font-size-large: 11pt;
-    --font-size-main: 10pt;
+    /* Core palette */
+    --color-brand-dark: #17324d;
+    --color-brand: #2878b5;
+    --color-brand-hover: #1f6498;
+    --color-brand-soft: #5387b0;
+    --color-link: #b369fd;
+
+    /* Surfaces and borders */
+    --color-page-bg: #f8f9fa;
+    --color-page-shell: #f2f4f7;
+    --color-surface: #ffffff;
+    --color-surface-muted: #f7f8fa;
+    --color-info-bg: #f2f7fb;
+    --color-border-subtle: #edf0f3;
+    --color-border-soft: #dfe5ea;
+    --color-border-field: #d9dee5;
+    --color-divider: #e5e7eb;
+
+    /* Text and state */
+    --color-text-main: #17324d;
+    --color-text-muted: #4b5563;
+    --color-text-soft: #6b7280;
+    --color-text-on-dark: #ffffff;
+    --color-text-on-dark-muted: hsla(0, 0%, 100%, 0.85);
+    --color-placeholder: #adb5bd;
+    --color-hover-overlay: #0154c92b;
+
+    /* Guidance block */
+    --color-guidance-bg: #e8f4fd;
+    --color-guidance-border: #b8d9f0;
+    --color-guidance-text: #1a3a5c;
+
+    /* Effects */
+    --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.08);
+    --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --focus-ring: 0 0 0 0.2rem rgba(40, 120, 181, 0.15);
+
+    /* Typography */
+    --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --bs-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+    /* Backward-compat alias consumed by Joomla head partial */
+    --link-color: var(--color-link);
 }
+
+/* ============================================================
+   Base Document Styling
+   ============================================================ */
 
 body {
-    background-color: var(--bg-light);
-    color: var(--text-color);
+    background-color: var(--color-page-bg);
+    color: var(--color-text-main);
+    font-family: var(--bs-font-sans-serif) !important;
 }
 
-h3, h1, th, b {
-    /*color: var(--psdi-color) !important;*/
-    color: var(--text-color) !important;
+h6, h5, h4, h3, h2, h1, th, b {
+    color: var(--color-text-main) !important;
+    font-family: var(--bs-font-sans-serif);
 }
 
-/*
-.navbar {
-    background-color: var(--link-color);
-}
-*/
+/* ============================================================
+   Shared Utility Styling
+   ============================================================ */
 
-
-#highlight {
-    background-color: var(--bg-light);
-}
-
-
-/* Add colour to asterisks in web form */
-.required {
-    color: #B94A48;
-  }
-
-/* Allow rows of table to be clicakble */
-.clickable:hover {
-    background: var(--hover-color);
-    cursor: pointer;
-}
-
-
-/* Truncate text over multiple lines */
-.multi-line {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-}
-
-.trunc {
-    width: 10%;
-}
-
-
-th, td {
+th,
+td {
     padding-top: 5px;
-    /* padding-bottom: 1%;
-    padding-left: 3%;
-    padding-right: 4%; */
 }
-
 
 .page-item.active .page-link {
-    color: #fff !important;
-    background: var(--hover-color) !important;
-    border: var(--hover-color) !important;
-  }
-
-
-  .scrollx {
-    height: 40px;
-    max-width: 500px;
-    overflow-x: scroll;
-    white-space: nowrap;
- }
-
- .spinner {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    color: var(--color-text-on-dark) !important;
+    background: var(--color-hover-overlay) !important;
+    border: var(--color-hover-overlay) !important;
 }
 
 input::placeholder,
 textarea::placeholder {
-    color: #adb5bd !important;  /* Bootstrap gray-300 */
+    color: var(--color-placeholder) !important;
     opacity: 1;
     font-style: italic;
 }
 
 .guidance-box {
-    background-color: #e8f4fd;
-    border: 1px solid #b8d9f0;
-    border-radius: 0.375rem;   /* matches Bootstrap's default */
-    color: #1a3a5c;
+    background-color: var(--color-guidance-bg);
+    border: 1px solid var(--color-guidance-border);
+    border-radius: 0.375rem;
+    color: var(--color-guidance-text);
     padding: 1rem;
 }

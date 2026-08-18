@@ -1,0 +1,506 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/home.css') }}">
+
+<div class="biosimdb-page py-5">
+
+  <div class="container biosimdb-container">
+
+
+<div class="biosimdb-card">
+
+
+  <!-- ================================= -->
+  <!-- HEADER                            -->
+  <!-- ================================= -->
+
+  <header class="biosimdb-header">
+
+    <p class="biosimdb-header-label">
+      BioSimDB
+    </p>
+
+  </header>
+
+
+  <!-- ================================= -->
+  <!-- HERO                              -->
+  <!-- ================================= -->
+<section class="biosimdb-hero">
+
+    <a
+    href="{{ url_for('form.home') }}"
+    rel="noopener"
+    class="biosimdb-feature-link"
+    >
+  <div class="biosimdb-hero-header">
+
+    <div class="biosimdb-logo-container">
+      <img
+        src="{{ url_for('static', filename='images/logos/biosimdb-logo-black.png') }}"
+        alt="BioSimDB"
+        class="biosimdb-logo"
+      >
+    </div>
+
+    <div class="biosimdb-title-container">
+
+      <div class="biosimdb-eyebrow">
+        Biomolecular Simulation Database
+      </div>
+
+      <h1 class="biosimdb-title">
+        BioSimDB
+      </h1>
+
+    </div>
+
+  </div>
+  </a>
+
+  <div class="biosimdb-lead">
+    <p>
+      A community repository for biomolecular simulation data, providing a
+      standardised and structured way to share, discover and reuse molecular
+      dynamics trajectories and their associated metadata.
+    </p>
+
+    <p>
+      Researchers should use BioSimDB to ensure that valuable simulation data
+      does not remain isolated on individual computers or buried in
+      publications, but becomes a reusable scientific resource for the wider
+      biomolecular simulation community.
+    </p>
+  </div>
+
+</section>
+
+
+  <!-- ================================= -->
+  <!-- ACTIONS                           -->
+  <!-- ================================= -->
+
+  <section class="biosimdb-actions">
+
+    <div class="d-flex flex-wrap gap-2 justify-content-center">
+
+      <a
+        class="btn btn-primary biosimdb-primary-btn"
+        href="{{ links.deposit }}"
+      >
+        Start a Deposition
+      </a>
+
+      <a
+        class="btn btn-outline-primary biosimdb-secondary-btn"
+        href="{{ links.biosimdb }}"
+        target="_blank"
+        rel="noopener"
+      >
+        Visit BioSimDB
+      </a>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================================= -->
+  <!-- INFORMATION PANEL                 -->
+  <!-- ================================= -->
+
+  <section class="biosimdb-details">
+
+    <h2>
+      Furthering Science
+    </h2>
+
+    <p>
+        By capturing simulation data together with detailed information about the system, simulation methods, parameters and provenance, BioSimDB will make simulations findable, interpretable and reusable. This will enable researchers to reproduce and validate published work, compare simulations across studies and systems, perform large scale analyses, and provide high quality datasets for emerging data driven and machine learning approaches.
+    </p>
+
+  </section>
+
+
+  <!-- ================================= -->
+  <!-- DIVIDER                           -->
+  <!-- ================================= -->
+
+  <div class="biosimdb-divider"></div>
+
+
+  <!-- ================================= -->
+  <!-- FEATURES                          -->
+  <!-- ================================= -->
+
+
+  <section class="biosimdb-features">
+
+    <h2 class="biosimdb-section-title">
+      What you can do
+    </h2>
+
+    <div class="row g-3">
+
+      <!-- Feature 1 -->
+
+      <div class="col-md-4">
+
+
+        <a
+        href="{{ links.deposit }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Submit Data
+          </h3>
+
+          <p>
+            Prepare structured simulation records and
+            deposit them into BioSimDB.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+
+      <!-- Feature 2 -->
+
+      <div class="col-md-4">
+
+        <a
+        href="{{ links.biosimdb }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Discover Data
+          </h3>
+
+          <p>
+            Explore biomolecular simulation datasets and
+            their rich structured metadata.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+      <!-- Feature 3 -->
+
+      <div class="col-md-4">
+
+        <a
+        href="{{ links.extract }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+            <h3>
+                Extract Metadata
+            </h3>
+          <p>
+            Automatically extract useful metadata from
+            molecular dynamics topology and trajectory files.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+      <!-- Feature 4 -->
+
+      <div class="col-md-4">
+
+        <a
+        href="{{ links.schema }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Standardise Data
+          </h3>
+
+          <p>
+            Refer to the schema used to standardise terms used in
+            biomolecular simulations.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+      <!-- Feature 4 -->
+
+      <div class="col-md-4">
+
+        <a
+        href="{{ links.aiida_gromacs }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Collect Provenance
+          </h3>
+
+          <p>
+            Use our aiida plugins to record each step of your simulation.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+
+
+    </div>
+
+  </section>
+
+  <!-- ================================= -->
+  <!-- DIVIDER                           -->
+  <!-- ================================= -->
+
+  <div class="biosimdb-divider"></div>
+
+  <!-- ================================= -->
+  <!-- FEATURES 2                        -->
+  <!-- ================================= -->
+
+  <section class="biosimdb-features">
+
+    <h2 class="biosimdb-section-title">
+      Guidance
+    </h2>
+
+    <div class="row g-3">
+
+      <!-- Info 1 -->
+
+      <div class="col-md-4">
+
+        <a
+        href="{{ links.instructions }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            How to Deposit
+          </h3>
+
+          <p>
+            Step-by-step instruction on how to successfully complete your data deposition.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+      <!-- Info 2 -->
+
+      <div class="col-md-4">
+
+        <a
+        href="{{ links.policy }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Review our Policy
+          </h3>
+
+          <p>
+            Read our data curation policy when depositing your data.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div>
+
+      <!-- Info 3 -->
+
+      <!-- <div class="col-md-4">
+
+        <a
+        href="{{ links.roadmap }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Roadmap
+          </h3>
+
+          <p>
+            See what features are planned for future releases.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div> -->
+
+      <!-- Info 4 -->
+
+      <!-- <div class="col-md-4">
+
+        <a
+        href="{{ links.zulip }}"
+        rel="noopener"
+        target="_blank"
+        class="biosimdb-feature-link"
+        >
+
+        <div class="biosimdb-feature">
+
+          <h3>
+            Join our Zulip Channel
+          </h3>
+
+          <p>
+            Discuss depositions, feature requests and general queries on our Zulip channel.
+          </p>
+
+        </div>
+
+        </a>
+
+      </div> -->
+
+
+    </div>
+
+  </section>
+
+  <!-- ================================= -->
+  <!-- DIVIDER                           -->
+  <!-- ================================= -->
+
+  <div class="biosimdb-divider"></div>
+
+  <!-- ================================= -->
+  <!-- FOOTER                            -->
+  <!-- ================================= -->
+
+  <footer class="biosimdb-footer">
+
+
+    <div class="biosimdb-footer-title">
+        Supported by
+    </div>
+
+    <div class="biosimdb-sponsors">
+
+        <a href="https://www.psdi.ac.uk/" target="_blank" rel="noopener">
+            <img
+                src="{{ url_for('static', filename='images/logos/psdi-logo.png') }}"
+                alt="PSDI"
+            >
+        </a>
+
+        <a href="https://www.ccpbiosim.org/" target="_blank" rel="noopener">
+            <img
+                src="{{ url_for('static', filename='images/logos/CCPBioSim-logo.png') }}"
+                alt="CCPBioSim"
+            >
+        </a>
+
+    </div>
+
+
+    <div class="biosimdb-footer-title">
+      BioSimDB
+    </div>
+
+    <p>
+      Biomolecular simulation data, structured and discoverable.
+    </p>
+
+    <div class="biosimdb-footer-links">
+
+      <a
+        href="{{ links.docs }}"
+        target="_blank"
+        rel="noopener"
+      >
+        Documentation
+      </a>
+
+      <a
+        href="{{ links.github }}"
+        target="_blank"
+        rel="noopener"
+      >
+        Source Code
+      </a>
+
+      <a
+        href="{{ links.biosimdb }}"
+        target="_blank"
+        rel="noopener"
+      >
+        BioSimDB
+      </a>
+
+    </div>
+
+  </footer>
+
+
+</div>
+
+
+  </div>
+
+</div>
+
+{% endblock %}

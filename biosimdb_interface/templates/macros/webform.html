@@ -4,7 +4,7 @@
 
   Extends: main/base.html
   Macros: macros/webform.html (render_fields, render_files, render_metadata,
-          render_simulation_metadata, render_guidance, render_simulation_modal)
+          render_simulation_metadata, render_guidance)
 
   Context variables:
     schema (dict):    Ordered dict of form sections, each containing:
@@ -57,7 +57,7 @@
     {% if field.type == "textarea" %}
         {% set col_class = "col-12" %}
     {% elif field.type == "checkbox" %}
-        {% set col_class = "col-md-4 col-lg-3" %}
+        {% set col_class = "col-md-4 col-lg-4" %}
     {% elif field.fields %}
         {% set col_class = "col-12" %}
     {% else %}
@@ -170,15 +170,19 @@
   Args:
     field (dict): Field definition with `label` (str) and `options` (list of str).
 #}
-{% macro render_guidance(field) %}
-<div class="guidance-box mb-3">
-    <strong>{{ field.label }}</strong>
-    <ul class="mb-0 mt-1">
-        {% for opt in field.options %}
-        <li>{{ opt | safe }}</li>
-        {% endfor %}
-    </ul>
-</div>
+{% macro render_guidance(guidance) %}
+
+    {% for field in guidance %}
+    <div class="guidance-box mb-3">
+        <strong>{{ field.label }}</strong>
+        <ul class="mb-0 mt-1">
+            {% for opt in field.options %}
+            <li>{{ opt | safe }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
 {% endmacro %}
 
 {#
@@ -192,7 +196,7 @@
 <!-- <h5 class="entry-number">Entry</h5> -->
 <div class="row">
     {% for file_key, file in files.items() %}
-    <div class="col-md-4 mb-3">
+    <div class="col-md-6 mb-3">
         <label class="form-label">{{ file.label }} {% if file.required %} <span class="text-danger">*</span>{% endif %}</label>
         <input type="file"
                class="form-control"
@@ -254,7 +258,7 @@
                                 each with a `label` and `fields` dict.
 #}
 {% macro render_simulation_metadata(simulation_metadata) %}
-<nav class="mb-3 mt-3 sticky-top bg-white border-bottom py-2" style="z-index: 1025;">
+<nav class="mb-3 mt-3 sticky-top bg-white py-2" style="z-index: 1025;">
     <h5 class="text-center mb-2">Simulation Metadata</h5>
     <div class="d-flex flex-wrap gap-2 justify-content-center">
         {% for meta_section, meta_group in simulation_metadata.items() %}
@@ -263,36 +267,76 @@
     </div>
 
     <!-- Include submit/save buttons in sticky top -->
-    <div class="container bg-white border-start border-end p-3 d-grid gap-2">
+    <div class="container bg-white p-3 d-grid gap-2">
         <input type="submit" class="btn btn-outline-success btn-lg" name="save" value="Download Simulation Metadata">
         <input type="submit" class="btn btn-outline-success btn-lg" name="submit" value="Submit to BioSimDB">
     </div>
 </nav>
 
 {% for meta_section, meta_group in simulation_metadata.items() %}
-<div id="section_{{ meta_section | replace(' ', '_') }}" class="mb-4 border rounded p-3 bg-light">
-    <h5 class="fw-semibold border-bottom pb-2">{{ meta_group.label or meta_section }}</h5>
+
+{% set section_id = "section_" ~ (meta_section | replace(' ', '_')) %}
+{% set collapse_id = section_id ~ "_collapse" %}
+{% set heading_id = section_id ~ "_heading" %}
+
+<section id="{{ section_id }}" class="biosimdb-section biosimdb-metadata-card">
+    <header id="{{ heading_id }}" class="biosimdb-section-header biosimdb-metadata-header accordion-header">
+        <button
+            class="accordion-button collapsed biosimdb-metadata-toggle"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#{{ collapse_id }}"
+            aria-expanded="true"
+            aria-controls="{{ collapse_id }}"
+        >
+            <span class="biosimdb-section-title">{{ meta_group.label or meta_section }}</span>
+        </button>
+    </header>
+
+    <div
+        id="{{ collapse_id }}"
+        class="accordion-collapse collapse show"
+        aria-labelledby="{{ heading_id }}"
+    >
+
+<div class="biosimdb-section-body">
     {% if meta_group.fields %}
         {% set sorted_fields = meta_group.fields.items() | list | sort(attribute='1.type') %}
         {% for field_name, field in sorted_fields %}
             {% if field.fields %}
                 {% if field.multiple %}
-                    <div class="multiple-field-container" data-field="{{ field_name }}" data-section="{{ meta_section }}"{% if field.max %} data-max="{{ field.max }}"{% endif %}>
+                    <div
+                        class="multiple-field-container"
+                        data-field="{{ field_name }}"
+                        data-section="{{ meta_section }}"
+                        {% if field.max %}data-max="{{ field.max }}"{% endif %}
+                    >
                         <div class="field-instance mb-4">
-                            <h6>{{ field.label }} 1</h6>
+                            <h4 class="biosimdb-subsection-title">{{ field.label }} 1</h4>
                             {{ render_fields(field.fields, meta_section ~ '[' ~ field_name ~ '][1]') }}
                             <button type="button" class="btn btn-sm btn-outline-danger remove-instance mt-2">Remove</button>
                         </div>
+
                         <div class="multiple-field-template" style="display:none;">
-                            <h6>{{ field.label }} <span class="instance-number"></span></h6>
+                            <h4 class="biosimdb-subsection-title">
+                                {{ field.label }} <span class="instance-number"></span>
+                            </h4>
                             {{ render_fields(field.fields, meta_section ~ '[' ~ field_name ~ '][TEMPLATE]') }}
                             <button type="button" class="btn btn-sm btn-outline-danger remove-instance mt-2">Remove</button>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary add-instance mb-3" data-field="{{ field_name }}" data-section="{{ meta_section }}">Add Another {{ field.label }}</button>
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary add-instance mb-3"
+                            data-field="{{ field_name }}"
+                            data-section="{{ meta_section }}"
+                        >
+                            Add Another {{ field.label }}
+                        </button>
                     </div>
                 {% else %}
-                    <div class="mb-4">
-                        <h6>{{ field.label }}</h6>
+                    <div class="mb-5">
+                        <h4 class="biosimdb-subsection-title">{{ field.label }}</h4>
                         {{ render_fields(field.fields, meta_section ~ '[' ~ field_name ~ ']') }}
                     </div>
                 {% endif %}
@@ -302,5 +346,7 @@
         {% endfor %}
     {% endif %}
 </div>
+</div>
+</section>
 {% endfor %}
 {% endmacro %}

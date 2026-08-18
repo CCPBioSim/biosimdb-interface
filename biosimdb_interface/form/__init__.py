@@ -3,4 +3,4 @@ from flask import Blueprint
 
 form_bp = Blueprint("form", __name__)
 
-from . import extract, webform  # noqa: E402, F401
+from . import extract, home, webform  # noqa: E402, F401

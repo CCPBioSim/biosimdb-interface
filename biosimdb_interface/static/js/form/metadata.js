@@ -236,8 +236,14 @@ function renumberInstances(container) {
         const newIndex = index + 1;
 
         // Update header text
-        const header = instance.querySelector('h6');
-        header.textContent = header.textContent.replace(/\d+/, newIndex);
+        const header = instance.querySelector('.biosimdb-subsection-title');
+        const numberEl = instance.querySelector('.instance-number');
+
+        if (numberEl) {
+        numberEl.textContent = newIndex;
+        } else if (header) {
+        header.textContent = header.textContent.replace(/\d+$/, newIndex);
+        }
 
         // Update input names
         instance.querySelectorAll('input, select, textarea').forEach(input => {

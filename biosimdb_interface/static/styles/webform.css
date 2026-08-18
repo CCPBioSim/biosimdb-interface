@@ -1,0 +1,185 @@
+
+/* ============================================================
+   Webform Card + Buttons
+   ============================================================ */
+
+.biosimdb-form-card {
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.biosimdb-btn {
+  border-radius: 5px;
+  font-weight: 600;
+}
+
+.biosimdb-btn-primary {
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+}
+
+.biosimdb-btn-primary:hover {
+  background-color: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
+}
+
+/* match thickness of header in home.html */
+.biosimdb-form-card > .biosimdb-header {
+  padding: 17px 35px;
+}
+
+/* ============================================================
+   Stage Sections
+   ============================================================ */
+
+.biosimdb-stage {
+  margin-bottom: 28px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 9px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.biosimdb-stage-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 25px;
+  background-color: var(--color-brand-dark);
+  color: var(--color-text-on-dark);
+}
+
+.biosimdb-stage-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--color-brand-soft);
+  color: var(--color-text-on-dark);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.biosimdb-stage-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.biosimdb-stage-hint {
+  margin: 3px 0 0;
+  color: var(--color-text-on-dark-muted);
+  font-size: 0.85rem;
+}
+
+.biosimdb-stage-body {
+  padding: 28px;
+}
+
+/* ============================================================
+   Metadata Accordion Sections
+   ============================================================ */
+
+.biosimdb-metadata-header .accordion-button {
+  background: transparent;
+  color: var(--color-text-on-dark);
+  box-shadow: none;
+}
+
+.biosimdb-metadata-header .accordion-button::after {
+  filter: brightness(0) invert(1);
+}
+
+.biosimdb-metadata-header .accordion-button:not(.collapsed) {
+  box-shadow: none;
+}
+
+.biosimdb-section {
+  margin-bottom: 28px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 9px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.biosimdb-section-header {
+  padding: 18px 25px;
+  background-color: var(--color-brand);
+  color: var(--color-text-on-dark);
+}
+
+.biosimdb-section-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: left;
+  color: var(--color-text-on-dark) !important;
+}
+
+.biosimdb-section-hint {
+  margin: 4px 0 0;
+  color: var(--color-text-on-dark-muted);
+  font-size: 0.85rem;
+}
+
+.biosimdb-section-body {
+  padding: 28px;
+}
+
+.biosimdb-guidance {
+  margin-bottom: 25px;
+  padding: 18px 20px;
+  background-color: var(--color-info-bg);
+  border-left: 4px solid var(--color-brand);
+  border-radius: 2px;
+  color: var(--color-text-muted);
+}
+
+/* ============================================================
+   Form Controls
+   ============================================================ */
+
+.biosimdb-form-card .form-label {
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.biosimdb-form-card .form-control,
+.biosimdb-form-card .form-select {
+  border-color: var(--color-border-field);
+  border-radius: 5px;
+}
+
+.biosimdb-form-card .form-control:focus,
+.biosimdb-form-card .form-select:focus {
+  border-color: var(--color-brand);
+  box-shadow: var(--focus-ring);
+}
+
+.biosimdb-form-card .form-text {
+  color: var(--color-text-soft);
+}
+
+/* ============================================================
+   Responsive Overrides
+   ============================================================ */
+
+@media (max-width: 767px) {
+  .biosimdb-stage-body,
+  .biosimdb-section-body {
+    padding: 22px;
+  }
+
+  .biosimdb-stage-header,
+  .biosimdb-section-header {
+    padding: 17px 20px;
+  }
+}

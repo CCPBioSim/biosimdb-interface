@@ -2,100 +2,381 @@
   webform.html
   Main simulation metadata extraction and submission form.
 
-  Extends: main/base.html
-  Macros: macros/webform.html (render_fields, render_files, render_metadata,
-          render_simulation_metadata, render_guidance, render_simulation_modal)
+  The BioSimDB schema contains a special top-level "stages" class.
+  Its child classes are the actual simulation stages:
 
-  Context variables:
-    schema (dict):    Ordered dict of form sections, each containing:
-                        title (str), description (str), guidance (str, optional),
-                        files, fields, metadata, simulation_metadata (optional subsections)
-    BASE_URL (str):   Base URL of the BioSimDB instance, used for the community link.
-    session (dict):   Flask session; checked for 'access_token' to show login/logout button.
+      setup
+      minimisation
+      equilibration
+      production
+      analysis
 
-  Behaviour:
-    - Renders one card per schema section with file uploads, fields, and metadata subsections.
-    - Save button (name="save") triggers a JSON dry-run via fetch and downloads metadata as JSON.
-    - Submit button (name="submit") validates then posts to BioSimDB; redirects to login if needed.
-    - Form state and extracted metadata are persisted in sessionStorage via metadata.js.
-    - Fields are disabled until metadata is extracted; Bootstrap popovers explain this on click.
+  Other top-level schema classes (settings, topology, composition,
+  potentials, compute, etc.) are rendered as normal metadata sections.
 #}
+
 {% extends "main/base.html" %}
 
-{% from "macros/webform.html" import render_fields, render_files, render_metadata, render_simulation_metadata, render_guidance, render_simulation_modal with context %}
+{% from "macros/webform.html" import
+    render_fields,
+    render_files,
+    render_metadata,
+    render_simulation_metadata,
+    render_guidance
+    with context
+%}
 
 
 {% block content %}
 
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/webform.css') }}">
 
-<div class="py-4 mt-3 mb-3">
-<form class="upload-form container bg-white rounded border p-4 mb-5" action="{{ url_for('form.webform') }}" method="POST" enctype="multipart/form-data" id="simulationForm">
 
-    <div class="position-relative d-flex align-items-center mb-2">
-        <a href="{{ BASE_URL }}/communities/biosimdb" target="_blank" class="btn btn-sm btn-outline-primary">BioSimDB ↗</a>
-        <!-- <h2 class="mb-0 position-absolute start-50 translate-middle-x">Data Extraction & Submission Form</h2> -->
-        {% if session.get('access_token') %}
-            <a href="{{ url_for('login.logout') }}" class="btn btn-sm btn-outline-secondary ms-auto">Log out
-                {% if session.get('user_email') %}
-                    {{ session.get('user_email') }}
-                {% endif %}
-            </a>
-        {% else %}
-            <a href="{{ url_for('login.login') }}" class="btn btn-sm btn-outline-primary ms-auto">Log in</a>
-        {% endif %}
-    </div>
+<div class="biosimdb-page py-5">
 
-            {% for section_key, section in schema.items() %}
-                <div class="form-step card mb-4">
+    <div class="container biosimdb-container">
 
-                    <div class="card-header justify-content-between">
-                        <!-- <strong>{{ section.title }}</strong> -->
-                        <h5 class="mb-0 text-center">{{ section.title }}</h5>
-                    </div>
+        <form
+            class="biosimdb-form-card mb-4"
+            action="{{ url_for('form.webform') }}"
+            method="POST"
+            enctype="multipart/form-data"
+            id="simulationForm"
+        >
 
-                    <div class="card-body section-container"
-                        data-section="{{ section_key }}">
-                        <p class="text-muted mb-4">{{ section.description }}</p>
+            <header class="biosimdb-header">
 
-                        {% if section.guidance %}
-                            {{ render_guidance(section.guidance) }}
+            <!-- =====================================================
+                 TOOLBAR
+                 ===================================================== -->
+
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+
+                    <a
+                        href="{{ BASE_URL }}/communities/biosimdb"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-sm btn-primary biosimdb-btn biosimdb-btn-primary"
+                    >
+                        BioSimDB ↗
+                    </a>
+
+
+                    <div class="ms-auto">
+
+                        {% if session.get('access_token') %}
+
+                            <a
+                                href="{{ url_for('login.logout') }}"
+                                class="btn btn-sm btn-outline-secondary biosimdb-btn"
+                            >
+                                Log out
+                                {% if session.get('user_email') %}
+                                    {{ session.get('user_email') }}
+                                {% endif %}
+                            </a>
+
+                        {% else %}
+
+                            <a
+                                href="{{ url_for('login.login') }}"
+                                class="btn btn-sm btn-primary biosimdb-btn biosimdb-btn-primary"
+                            >
+                                Log in
+                            </a>
+
                         {% endif %}
 
-                        <div class="section-instance">
-                            {% if section.files %}
-                                {{ render_files(section.files) }}
-                            {% endif %}
-                            {% if section.fields %}
-                                {{ render_fields(section.fields, section_key) }}
-                            {% endif %}
-                            {% if section.metadata %}
-                                {{ render_metadata(section.metadata) }}
-                            {% endif %}
-                            {% if section.simulation_metadata %}
-                                {{ render_simulation_metadata(section.simulation_metadata) }}
-                            {% endif %}
-                        </div>
                     </div>
+
                 </div>
-            {% endfor %}
 
-        <!-- <div class="position-fixed bottom-0 start-50 translate-middle-x" style="z-index:1030; width:100%;">
-            <div class="container bg-white border-start border-end p-3 d-grid gap-2">
-                <input type="submit" class="btn btn-outline-success btn-lg" name="save" value="Download Simulation Metadata">
-                <input type="submit" class="btn btn-outline-success btn-lg" name="submit" value="Submit to BioSimDB">
+            </header>
+
+            <section class="biosimdb-hero">
+
+                <a
+                href="{{ url_for('form.home') }}"
+                rel="noopener"
+                class="biosimdb-feature-link"
+                >
+                <div class="biosimdb-hero-header">
+
+                    <div class="biosimdb-logo-container">
+                        <img
+                            src="{{ url_for('static', filename='images/logos/biosimdb-logo-black.png') }}"
+                            alt="BioSimDB"
+                            class="biosimdb-logo"
+                        >
+                    </div>
+
+                    <div class="biosimdb-title-container">
+
+                        <div class="biosimdb-eyebrow">
+                            Biomolecular Simulation Database
+                        </div>
+
+                        <h1 class="biosimdb-title">
+                            BioSimDB
+                        </h1>
+
+                    </div>
+
+                </div>
+                </a>
+
+            </section>
+
+
+            <!-- =====================================================
+                 FORM CONTENT
+                 ===================================================== -->
+
+            <div class="p-4 p-md-5">
+
+
+                {#
+                  =====================================================
+                  STAGES
+
+                  The schema explicitly defines:
+
+                      stages
+                        ├── setup
+                        ├── minimisation
+                        ├── equilibration
+                        ├── production
+                        └── analysis
+
+                  These are the numbered stages.
+                  =====================================================
+                #}
+
+                {% if schema.get('stages') %}
+
+                    {% set stages = schema['stages'] %}
+
+                    {% if stages.fields %}
+
+                        {% for stage_key, stage in stages.fields.items() %}
+
+                            <section class="biosimdb-stage">
+
+                                <!-- Stage header -->
+
+                                <header class="biosimdb-stage-header">
+
+                                    <div class="biosimdb-stage-number">
+                                        {{ loop.index }}
+                                    </div>
+
+                                    <div>
+
+                                        <h2 class="biosimdb-stage-title">
+                                            {{ stage.label or stage_key | replace('_', ' ') | title }}
+                                        </h2>
+
+                                        {% if stage.hint %}
+                                            <p class="biosimdb-stage-hint">
+                                                {{ stage.hint }}
+                                            </p>
+                                        {% endif %}
+
+                                    </div>
+
+                                </header>
+
+
+                                <!-- Stage fields -->
+
+                                <div class="biosimdb-stage-body">
+
+                                    {% if stage.fields %}
+
+                                        {{ render_fields(
+                                            stage.fields,
+                                            'stages[' ~ stage_key ~ ']'
+                                        ) }}
+
+                                    {% endif %}
+
+                                </div>
+
+                            </section>
+
+                        {% endfor %}
+
+                    {% endif %}
+
+                {% endif %}
+
+
+                {#
+                  =====================================================
+                  OTHER TOP-LEVEL SCHEMA CLASSES
+
+                  These are NOT simulation stages.
+
+                  Examples from the schema include:
+
+                      settings
+                      observables
+                      topology
+                      composition
+                      potentials
+                      compute
+
+                  They therefore receive normal section headings,
+                  without stage numbers.
+                  =====================================================
+                #}
+
+                {% for section_key, section in schema.items() %}
+
+                    {% if section_key != 'stages' %}
+
+                        <section class="biosimdb-section">
+
+
+                            <!-- Section header -->
+
+                            <header class="biosimdb-section-header">
+
+                                <h2 class="biosimdb-section-title">
+                                    {{ section.label
+                                       or section.title
+                                       or section_key | replace('_', ' ') | title }}
+                                </h2>
+
+                                {% if section.hint %}
+
+                                    <p class="biosimdb-section-hint">
+                                        {{ section.hint }}
+                                    </p>
+
+                                {% elif section.description %}
+
+                                    <p class="biosimdb-section-hint">
+                                        {{ section.description }}
+                                    </p>
+
+                                {% endif %}
+
+                            </header>
+
+
+                            <!-- Section body -->
+
+                            <div
+                                class="biosimdb-section-body section-container"
+                                data-section="{{ section_key }}"
+                            >
+
+
+                                {% if section.guidance %}
+
+                                    <div class="biosimdb-guidance">
+
+                                        {{ render_guidance(section.guidance) }}
+
+                                    </div>
+
+                                {% endif %}
+
+
+                                <div class="section-instance">
+
+
+                                    {% if section.files %}
+
+                                        {{ render_files(section.files) }}
+
+                                    {% endif %}
+
+
+                                    {% if section.fields %}
+
+                                        {{ render_fields(
+                                            section.fields,
+                                            section_key
+                                        ) }}
+
+                                    {% endif %}
+
+
+                                    {% if section.metadata %}
+
+                                        {{ render_metadata(
+                                            section.metadata
+                                        ) }}
+
+                                    {% endif %}
+
+
+                                    {% if section.simulation_metadata %}
+
+                                        {{ render_simulation_metadata(
+                                            section.simulation_metadata
+                                        ) }}
+
+                                    {% endif %}
+
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                    {% endif %}
+
+                {% endfor %}
+
+
             </div>
-        </div> -->
 
-</form>
+
+        </form>
+
+    </div>
+
 </div>
 
 {% endblock %}
 
+
 {% block scripts %}
+
 {{ super() }}
-<script type="module" src="{{ url_for('static', filename='js/form/metadata.js') }}"></script>
-<!-- Get hint popovers to work -->
+
+<script
+    type="module"
+    src="{{ url_for('static', filename='js/form/metadata.js') }}"
+></script>
+
 <script>
-    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => new bootstrap.Popover(el));
+    document
+        .querySelectorAll('[data-bs-toggle="popover"]')
+        .forEach(el => new bootstrap.Popover(el));
+
+    document
+        .querySelectorAll('.accordion-button[data-bs-toggle="collapse"]')
+        .forEach((button) => {
+            const targetSelector = button.getAttribute('data-bs-target');
+            const target = targetSelector ? document.querySelector(targetSelector) : null;
+
+            const syncAccordionState = () => {
+                const isOpen = !!(target && target.classList.contains('show'));
+                button.classList.toggle('collapsed', !isOpen);
+                button.setAttribute('aria-expanded', String(isOpen));
+            };
+
+            button.addEventListener('shown.bs.collapse', syncAccordionState);
+            button.addEventListener('hidden.bs.collapse', syncAccordionState);
+            syncAccordionState();
+        });
 </script>
+
 {% endblock %}

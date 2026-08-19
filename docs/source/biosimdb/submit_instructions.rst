@@ -1,9 +1,9 @@
 2. Submit Data to BioSimDB
 ==========================
 
-The ``biosimdb-interface`` is hosted as a webform, which automatically extracts useful data that describes a molecular dynamics simulation. Whenever you share your data, include this metadata with the simulation files to make your data more findable, accessible, interoperable and reuseable (`FAIR <https://www.go-fair.org/fair-principles/>`_).
+The ``biosimdb-interface`` is hosted as a deposition webform, which automatically extracts useful data that describes a molecular dynamics simulation. Whenever you share your data, include this metadata with the simulation files to make your data more findable, accessible, interoperable and reuseable (`FAIR <https://www.go-fair.org/fair-principles/>`_).
 
-To submit data to BioSimDB via our self-hosted webform, users are encouraged to first create an account with PSDI and join the BioSimDB community.
+To submit data to BioSimDB via our self-hosted webform, users are encouraged to first create an account with PSDI.
 
 Once you have successfully joined the `BioSimDB <https://data-collections.psdi.ac.uk/communities/biosimdb/>`_ community on PSDI community data collections, you are ready to submit your data!
 
@@ -15,10 +15,9 @@ Steps to Extract Simulation Metadata
 
 1. To extract simulation metadata, upload a topology and corresponding trajectory files to the "BioSim Data Extraction & Submission Form".
 
-    - Optionally, upload an `aiida archive file <https://aiida-gromacs.readthedocs.io/>`_ containing the simulation provenance to extract further information about the simulation protocol.
     - Multiple trajectory files can be uploaded with a single associated topology file, both file types are required.
     - Various simulation file formats are accepted, provided they can be read using `MDAnalysis <https://www.mdanalysis.org/>`_, please ensure your files are compatible.
-    - This form uses the `biosim-schema <https://biosim-schema.readthedocs.io/>`_ to define and group BioSim metadata. Missing terms or units? Please considering raising an issue or contributing to the `schema <https://github.com/CCPBioSim/biosim-schema/>`_.
+    - This form uses the `biosim-schema <https://biosim-schema.readthedocs.io/>`_ to define and group BioSim metadata. Missing terms or units? Please consider raising an issue or contributing to the `schema <https://github.com/CCPBioSim/biosim-schema/>`_.
 
 2. Click "Extract Metadata", this will automatically populate applicable files in the webform.
 

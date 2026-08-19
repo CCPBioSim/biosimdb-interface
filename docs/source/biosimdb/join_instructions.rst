@@ -57,24 +57,4 @@ Fill in the short webform with your details and click register.
 
 If successful, you will receive an email from PSDI, requesting confirmation of your account, to the email address you have manually registered with. Please note, this may take a few hours to be processed. If there are any further delays, please contact PSDI support directly.
 
-c). BioSimDB Community Membership
----------------------------------
-
-.. note::
-    The process for joining the BioSimDB community may change and become more streamlined in the future. Please follow the steps below at present.
-
-Once you have successfully logged into PSDI community data collections, you can request membership specifically to the `BioSimDB community <https://data-collections.psdi.ac.uk/communities/biosimdb/>`_.
-
-.. image:: ../_static/psdi/3_membership.png
-   :width: 800
-   :align: center
-
-We operate a permissive policy for accepting researchers who wish to share their data with the BioSim community and beyond. Please provide your name, email you used to log into PSDI and a (very) brief summary of what data you would like to upload to BioSimDB.
-
-.. image:: ../_static/psdi/3_request_form.png
-   :width: 600
-   :align: center
-
-You will receive an email invitation from PSDI to join BioSimDB. Once you have accepted this email invitation, you will have access to submit your simulation data to BioSimDB!
-
 Please next have a look at our guide on how to submit data to BioSimDB via the BiSimDB Interface.

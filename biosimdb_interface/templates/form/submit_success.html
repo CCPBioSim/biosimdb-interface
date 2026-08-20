@@ -6,22 +6,31 @@
     record_url (str): URL of the newly created BioSimDB record.
 
   Behaviour:
+    - Clears client-side form cache so a new submission starts clean.
     - Counts down 10 seconds then redirects to record_url in the same tab.
     - "View Record" button opens record_url immediately and cancels the countdown.
+    - "Return to Webform" button returns to an empty form.
 #}
 {% extends "main/base.html" %}
 {% block content %}
 <div class="container text-center mt-5">
     <p class="text-success fw-semibold">BioSimDB record created successfully! Please complete your submission there.</p>
     <p class="text-muted">Redirecting to your record in <span id="countdown">10</span> seconds...</p>
-    <a href="{{ record_url }}" target="_blank" class="btn btn-success me-2" onclick="clearInterval(interval); document.getElementById('countdown').closest('p').style.display='none'">View Record</a>
-    <!-- <a href="{{ url_for('form.webform') }}" class="btn btn-outline-secondary">Submit Another</a> -->
+    <div class="d-inline-flex gap-2">
+        <a href="{{ record_url }}" target="_blank" rel="noopener" class="btn btn-success" onclick="clearInterval(interval); document.getElementById('countdown').closest('p').style.display='none'">View Record</a>
+        <a href="{{ url_for('form.webform') }}" target="_blank" rel="noopener" class="btn btn-outline-secondary" onclick="clearInterval(interval); document.getElementById('countdown').closest('p').style.display='none'">Return to Webform</a>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        sessionStorage.removeItem('formState');
+        sessionStorage.removeItem('extractedMetadata');
+    });
+
     let seconds = 10;
     const countdown = document.getElementById('countdown');
     const interval = setInterval(() => {
@@ -29,8 +38,11 @@
         countdown.textContent = seconds;
         if (seconds <= 0) {
             clearInterval(interval);
-            window.location = '{{ record_url }}';
-            // window.open('{{ record_url }}', '_blank');
+            const win = window.open('{{ record_url }}', '_blank', 'noopener,noreferrer');
+            if (!win) {
+                // Fallback if popup was blocked
+                window.location = '{{ record_url }}';
+            }
         }
     }, 1000);
 </script>

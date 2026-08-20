@@ -177,8 +177,11 @@ def do_submit():
         # keep pending_form_data and pending_files_dir for retry
         return redirect(url_for("form.webform"))
 
-    # success: now clear pending state
+    # success: now clear pending state etc.
     session.pop("pending_files_dir", None)
+    session.pop("access_token", None)
+    session.pop("user_email", None)
+    session.pop("post_login_redirect", None)
 
     BASE_URL = current_app.config["BASE_URL"]
     record_url = f"{BASE_URL}/uploads/{draft_id}"

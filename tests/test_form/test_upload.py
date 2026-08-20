@@ -88,6 +88,15 @@ def test_do_submit_calls_invenio(client):
         patch("biosimdb_interface.form.webform.prepare_for_invenio") as mock_prepare,
     ):
         mock_prepare.return_value = "draft-123"
-        _response = client.post("/do_submit")
+        response = client.post("/do_submit")
+        assert response.status_code == 200
+        assert b"View Record" in response.data
+        assert b"Return to Webform" in response.data
         assert mock_invite.called
         assert mock_prepare.called
+
+    with client.session_transaction() as sess:
+        assert "pending_files_dir" not in sess
+        assert "access_token" not in sess
+        assert "user_email" not in sess
+        assert "post_login_redirect" not in sess

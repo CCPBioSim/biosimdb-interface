@@ -22,9 +22,13 @@ from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_met
 
 from . import form_bp
 from .upload import (
+    cleanup_tmpdir,
     extract_uploaded_file_metadata,
+    is_submission_cancelled,
+    mark_submission_cancelled,
     prepare_for_invenio,
     save_pending_submission,
+    verify_cached_file_meta,
 )
 from .utils import form_to_json, remove_empty_fields
 from .validation import validate_with_mdanalysis
@@ -40,15 +44,32 @@ def webform():
     uploaded files plus the validated JSON for deferred Invenio upload, then
     starts login if needed.
     """
+    clear_client_state = False
     token = session.get("access_token")
+    tmpdir = session.get("submission_tmpdir")
+
+    # an abandoned/failed login leaves a pending submit; discard it on return
+    if request.method == "GET":
+        if session.pop("force_clear_client_state", False):
+            clear_client_state = True
+        elif tmpdir and session.get("post_login_redirect") and not token:
+            cleanup_tmpdir(tmpdir)
+            for key in (
+                "submission_tmpdir",
+                "post_login_redirect",
+                "topo_path",
+                "traj_files",
+            ):
+                session.pop(key, None)
+            tmpdir = None
+            clear_client_state = True
+            if session.pop("last_error", None):
+                flash(
+                    "Login failed. Please extract and submit your files again.",
+                    "warning",
+                )
 
     if request.method == "POST":
-        # are errors being handled correctly?
-        # check files can be read with mda
-        mda_error = validate_with_mdanalysis()
-        if mda_error:
-            return jsonify({"validation_errors": [mda_error]})
-
         action = (
             "save"
             if "save" in request.form
@@ -57,6 +78,45 @@ def webform():
             else None
         )
 
+        if action == "submit":
+            if (
+                not tmpdir
+                or not session.get("topo_path")
+                or not session.get("traj_files")
+            ):
+                return jsonify(
+                    {
+                        "validation_errors": [
+                            "Please extract metadata before submitting."
+                        ]
+                    }
+                ), 400
+
+            ok, err = verify_cached_file_meta(tmpdir)
+            if not ok:
+                return jsonify({"validation_errors": [err]}), 400
+
+        if action in ["save", "submit"]:
+            if (
+                not tmpdir
+                or not session.get("topo_path")
+                or not session.get("traj_files")
+            ):
+                return jsonify(
+                    {
+                        "validation_errors": [
+                            "Please extract metadata before submitting."
+                        ]
+                    }
+                ), 400
+
+        # check files can be read with mda
+        topo_path = session.get("topo_path")
+        traj_files = session.get("traj_files")
+        mda_error = validate_with_mdanalysis(topo_path, traj_files)
+
+        if mda_error:
+            return jsonify({"validation_errors": [mda_error]})
         if action in ["save", "submit"]:
             # include file info in output, ro-crate?
             json_form = form_to_json(request.form)
@@ -66,10 +126,7 @@ def webform():
             json_form = convert_populated_metadata_units(json_form)
 
             if action == "save":
-                json_form["files"] = extract_uploaded_file_metadata()
-
-            # NOTE: note used yet, could be used to validate extracted fields are matching what is returned from json_form, cookie size increases though
-            # extracted = session.get("extracted_metadata")
+                json_form["files"] = extract_uploaded_file_metadata(tmpdir)
 
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
 
@@ -106,6 +163,7 @@ def webform():
         schema=schema,
         form_data={},
         errors={},
+        clear_client_state=clear_client_state,
     )
 
 
@@ -118,7 +176,7 @@ def resume_submit():
     """
     if not session.get("access_token"):
         return redirect(url_for("login.login"))
-    tmpdir = session.get("pending_files_dir")
+    tmpdir = session.get("submission_tmpdir")
     pending_form_path = (
         os.path.join(tmpdir, "pending_form_data.json") if tmpdir else None
     )
@@ -136,10 +194,15 @@ def do_submit():
     Clears pending session data after upload and renders the success page
     with the record URL.
     """
-    tmpdir = session.pop("pending_files_dir", None)
+    tmpdir = session.get("submission_tmpdir")
 
     if not tmpdir:
         flash("No pending submission found. Please submit again.", "warning")
+        return redirect(url_for("form.webform"))
+
+    if is_submission_cancelled(tmpdir):
+        cleanup_tmpdir(tmpdir)
+        session.pop("submission_tmpdir", None)
         return redirect(url_for("form.webform"))
 
     pending_form_path = os.path.join(tmpdir, "pending_form_data.json")
@@ -157,7 +220,20 @@ def do_submit():
     try:
         token = session.get("access_token")
         invite_user("biosimdb", token)
+
+        if is_submission_cancelled(tmpdir):
+            cleanup_tmpdir(tmpdir)
+            session.pop("submission_tmpdir", None)
+            return redirect(url_for("form.webform"))
+
         draft_id = prepare_for_invenio(flat_form, tmpdir)
+
+        if not draft_id:
+            cleanup_tmpdir(tmpdir)
+            session.pop("submission_tmpdir", None)
+            flash("Upload failed. Please try again.", "danger")
+            return redirect(url_for("form.webform"))
+
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else None
 
@@ -170,19 +246,56 @@ def do_submit():
                 "warning",
             )
             return redirect(url_for("login.login"))
-        else:
-            session.pop("access_token", None)  # force fresh login
-            flash("Upload failed unexpectedly. Please try again.", "danger")
 
-        # keep pending_form_data and pending_files_dir for retry
+        session.pop("access_token", None)  # force fresh login
+        cleanup_tmpdir(tmpdir)
+        session.pop("submission_tmpdir", None)
+        flash("Upload failed unexpectedly. Please try again.", "danger")
         return redirect(url_for("form.webform"))
 
-    # success: now clear pending state etc.
-    session.pop("pending_files_dir", None)
+    # success: now clear submission data and logout user.
+    cleanup_tmpdir(tmpdir)
+    session.pop("submission_tmpdir", None)
     session.pop("access_token", None)
     session.pop("user_email", None)
     session.pop("post_login_redirect", None)
 
     BASE_URL = current_app.config["BASE_URL"]
     record_url = f"{BASE_URL}/uploads/{draft_id}"
+    session["submitted_record_url"] = record_url
+    return redirect(url_for("form.submit_success"))
+    # return render_template("form/submit_success.html", record_url=record_url)
+
+
+@form_bp.route("/cancel_submit", methods=["POST"])
+def cancel_submit():
+    """Signal an in-progress submission to stop and reset client-facing session state.
+
+    Does not delete the tmpdir directly, since the in-flight do_submit request
+    still owns those files; do_submit checks the cancellation flag itself and
+    performs its own cleanup once it is safe to do so.
+    """
+    tmpdir = session.get("submission_tmpdir")
+    mark_submission_cancelled(tmpdir)
+
+    for key in (
+        "submission_tmpdir",
+        "post_login_redirect",
+        "topo_path",
+        "traj_files",
+        "access_token",
+        "user_email",
+    ):
+        session.pop(key, None)
+    session["force_clear_client_state"] = True
+    return jsonify({"success": True})
+
+
+@form_bp.route("/submit_success")
+def submit_success():
+    """Render the successful Invenio submission page."""
+    record_url = session.get("submitted_record_url")
+    if not record_url:
+        flash("No completed submission found.", "warning")
+        return redirect(url_for("form.webform"))
     return render_template("form/submit_success.html", record_url=record_url)

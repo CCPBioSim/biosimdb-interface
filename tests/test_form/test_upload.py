@@ -54,23 +54,31 @@ def test_load_pending_upload_paths_uses_manifest_and_includes_sim_metadata(app):
 
 
 def test_save_pending_submission(client):
-    with (
-        patch(
-            "biosimdb_interface.form.webform.validate_with_mdanalysis",
-            return_value=None,
-        ),
-        patch("biosimdb_interface.form.webform.validate_metadata"),
-        patch("biosimdb_interface.form.webform.save_pending_submission") as mock_save,
-    ):
-        mock_save.return_value = None
-        client.post(
-            "/webform",
-            data={
-                "submit": "1",
-            },
-            content_type="multipart/form-data",
-        )
-        assert mock_save.called
+    """A validated submission with extracted files is persisted."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with client.session_transaction() as sess:
+            sess["submission_tmpdir"] = tmpdir
+            sess["topo_path"] = f"{tmpdir}/topology.pdb"
+            sess["traj_files"] = [f"{tmpdir}/trajectory.xtc"]
+
+        with (
+            patch(
+                "biosimdb_interface.form.webform.validate_with_mdanalysis",
+                return_value=None,
+            ),
+            patch("biosimdb_interface.form.webform.validate_metadata"),
+            patch(
+                "biosimdb_interface.form.webform.verify_cached_file_meta",
+                return_value=(True, None),
+            ),
+            patch(
+                "biosimdb_interface.form.webform.save_pending_submission"
+            ) as mock_save,
+        ):
+            response = client.post("/webform", data={"submit": "1"})
+
+        assert response.status_code == 302
+        mock_save.assert_called_once()
 
 
 def test_do_submit_calls_invenio(client):
@@ -81,14 +89,14 @@ def test_do_submit_calls_invenio(client):
 
     with client.session_transaction() as sess:
         sess["access_token"] = "fake-token"
-        sess["pending_files_dir"] = tmpdir
+        sess["submission_tmpdir"] = tmpdir
 
     with (
         patch("biosimdb_interface.form.webform.invite_user") as mock_invite,
         patch("biosimdb_interface.form.webform.prepare_for_invenio") as mock_prepare,
     ):
         mock_prepare.return_value = "draft-123"
-        response = client.post("/do_submit")
+        response = client.post("/do_submit", follow_redirects=True)
         assert response.status_code == 200
         assert b"View Record" in response.data
         assert b"Return to Webform" in response.data
@@ -96,7 +104,7 @@ def test_do_submit_calls_invenio(client):
         assert mock_prepare.called
 
     with client.session_transaction() as sess:
-        assert "pending_files_dir" not in sess
+        assert "submission_tmpdir" not in sess
         assert "access_token" not in sess
         assert "user_email" not in sess
         assert "post_login_redirect" not in sess

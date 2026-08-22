@@ -9,14 +9,14 @@ from flask import (
     url_for,
 )
 
-from . import form_bp
+from ..home import home_bp
 
 
-@form_bp.route("/", methods=["GET"])
+@home_bp.route("/", methods=["GET"])
 def home():
     """Landing page with BioSimDB overview and quick links."""
     return render_template(
-        "main/home.html",
+        "home/home.html",
         links={
             "deposit": url_for("form.webform"),
             "biosimdb": f"{current_app.config.get('BASE_URL', '').rstrip('/')}/communities/biosimdb",

@@ -39,7 +39,7 @@ dependencies = [
     "Werkzeug==3.1.8",
     "data-collections-api==0.1.0",
     "MDAnalysis==2.10.0",
-    "python-dotenv==1.2.2",
+    "python-dotenv==1.2.3",
     "gunicorn>=26,<27",
     "biosim-extractor>=0.0.2,<1.0"
 ]

@@ -1,3 +1,25 @@
+/**
+ * Return a UUID unique to this browser tab.
+ * sessionStorage is intentionally tab-scoped, unlike localStorage.
+ */
+function getWorkflowId() {
+    const key = 'biosimdbWorkflowId';
+    let workflowId = sessionStorage.getItem(key);
+
+    if (!workflowId) {
+        workflowId = crypto.randomUUID();
+        sessionStorage.setItem(key, workflowId);
+    }
+
+    return workflowId;
+}
+
+/** Add the current tab's workflow ID to a request payload. */
+function addWorkflowId(formData) {
+    formData.set('workflow_id', getWorkflowId());
+    return formData;
+}
+
 // Handle click events for extract, save, submit, add/remove molecule instances, and clear
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('extract-metadata-btn')) {
@@ -5,7 +27,7 @@ document.addEventListener('click', function(e) {
 
         showLoadingOverlay(e.target, 'Extracting...');
         setFieldsDisabled(true);
-        const formData = new FormData();
+        const formData = addWorkflowId(new FormData());
 
         // Get uploaded files
         const topology = document.querySelector(`input[name="topology"]`).files[0];
@@ -52,9 +74,19 @@ document.addEventListener('click', function(e) {
         validateAndSubmit(form, () => {
             sessionStorage.removeItem('formState');
             sessionStorage.removeItem('extractedMetadata');
-            const hidden = document.createElement('input');
-            hidden.type = 'hidden'; hidden.name = 'submit'; hidden.value = '1';
-            form.appendChild(hidden);
+
+            const submitInput = document.createElement('input');
+            submitInput.type = 'hidden';
+            submitInput.name = 'submit';
+            submitInput.value = '1';
+            form.appendChild(submitInput);
+
+            const workflowInput = document.createElement('input');
+            workflowInput.type = 'hidden';
+            workflowInput.name = 'workflow_id';
+            workflowInput.value = getWorkflowId();
+            form.appendChild(workflowInput);
+
             HTMLFormElement.prototype.submit.call(form);
         }).then(success => {
             if (!success) hideLoadingOverlay(e.target);
@@ -115,7 +147,7 @@ document.addEventListener('click', function(e) {
 
     if (e.target.classList.contains('clear-metadata-btn')) {
         const form = document.getElementById('simulationForm');
-
+        clearWorkflow();
         // Clear all non-button inputs/selects/textareas
         lockForm();
     }
@@ -412,7 +444,7 @@ function requireExtraction(form) {
  * @param {function} onSuccess - Callback invoked with the server response data on success.
  */
 function validateAndSubmit(form, onSuccess) {
-    const formData = new FormData(form);
+    const formData = addWorkflowId(new FormData(form));
     formData.append('save', '1');
     return fetch(window.APPLICATION_BASE + '/webform', { method: 'POST', body: formData })
         .then(r => r.json())
@@ -464,7 +496,6 @@ function lockForm() {
     sessionStorage.removeItem('formState');
     setFieldsDisabled(true);
 
-    fetch(window.APPLICATION_BASE + '/clear_extraction', { method: 'POST' });
 }
 
 /**
@@ -493,4 +524,22 @@ function hideLoadingOverlay(button) {
     button.textContent = button.dataset.originalText ?? button.textContent;
     delete button.dataset.originalText;
     document.getElementById('loading-overlay')?.remove();
+}
+
+/**
+ * Delete the current tab's server-side workflow without affecting new work.
+ */
+function clearWorkflow() {
+    const workflowId = sessionStorage.getItem('biosimdbWorkflowId');
+    if (!workflowId) return;
+
+    sessionStorage.removeItem('biosimdbWorkflowId');
+
+    const formData = new FormData();
+    formData.set('workflow_id', workflowId);
+
+    fetch(window.APPLICATION_BASE + '/clear_extraction', {
+        method: 'POST',
+        body: formData,
+    });
 }

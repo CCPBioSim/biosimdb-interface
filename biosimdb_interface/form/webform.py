@@ -22,9 +22,9 @@ from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_met
 
 from . import form_bp
 from .upload import (
-    cleanup_tmpdir,
     extract_uploaded_file_metadata,
     is_submission_cancelled,
+    load_extracted_files,
     mark_submission_cancelled,
     prepare_for_invenio,
     save_pending_submission,
@@ -32,6 +32,13 @@ from .upload import (
 )
 from .utils import form_to_json, remove_empty_fields
 from .validation import validate_with_mdanalysis
+from .workflows import WorkflowNotFound
+
+
+def _get_workflow():
+    """Resolve the tab-scoped workflow sent with the current request."""
+    workflow_id = request.values.get("workflow_id")
+    return current_app.extensions["workflow_store"].get(workflow_id)
 
 
 @form_bp.route("/webform", methods=["GET", "POST"])
@@ -46,30 +53,20 @@ def webform():
     """
     clear_client_state = False
     token = session.get("access_token")
-    tmpdir = session.get("submission_tmpdir")
 
     # an abandoned/failed login leaves a pending submit; discard it on return
-    if request.method == "GET":
-        if session.pop("force_clear_client_state", False):
-            clear_client_state = True
-        elif tmpdir and session.get("post_login_redirect") and not token:
-            cleanup_tmpdir(tmpdir)
-            for key in (
-                "submission_tmpdir",
-                "post_login_redirect",
-                "topo_path",
-                "traj_files",
-            ):
-                session.pop(key, None)
-            tmpdir = None
-            clear_client_state = True
-            if session.pop("last_error", None):
-                flash(
-                    "Login failed. Please extract and submit your files again.",
-                    "warning",
-                )
+    if request.method == "GET" and session.pop("force_clear_client_state", False):
+        clear_client_state = True
 
     if request.method == "POST":
+        try:
+            workflow = _get_workflow()
+        except WorkflowNotFound as exc:
+            return jsonify({"validation_errors": [str(exc)]}), 400
+
+        tmpdir = workflow.tmpdir
+        topo_path, traj_files = load_extracted_files(tmpdir)
+
         action = (
             "save"
             if "save" in request.form
@@ -79,11 +76,7 @@ def webform():
         )
 
         if action == "submit":
-            if (
-                not tmpdir
-                or not session.get("topo_path")
-                or not session.get("traj_files")
-            ):
+            if not tmpdir or not topo_path or not traj_files:
                 return jsonify(
                     {
                         "validation_errors": [
@@ -97,11 +90,7 @@ def webform():
                 return jsonify({"validation_errors": [err]}), 400
 
         if action in ["save", "submit"]:
-            if (
-                not tmpdir
-                or not session.get("topo_path")
-                or not session.get("traj_files")
-            ):
+            if not tmpdir or not topo_path or not traj_files:
                 return jsonify(
                     {
                         "validation_errors": [
@@ -111,15 +100,16 @@ def webform():
                 ), 400
 
         # check files can be read with mda
-        topo_path = session.get("topo_path")
-        traj_files = session.get("traj_files")
         mda_error = validate_with_mdanalysis(topo_path, traj_files)
 
         if mda_error:
             return jsonify({"validation_errors": [mda_error]})
         if action in ["save", "submit"]:
             # include file info in output, ro-crate?
-            json_form = form_to_json(request.form)
+            form_values = request.form.copy()
+            # remove workflow_id from form
+            form_values.pop("workflow_id", None)
+            json_form = form_to_json(form_values)
             json_form = remove_empty_fields(json_form)
 
             # convert to standard units
@@ -144,11 +134,18 @@ def webform():
                 )
 
             if action == "submit":
-                save_pending_submission(json_form)
+                save_pending_submission(json_form, tmpdir)
                 if not token:
-                    session["post_login_redirect"] = url_for("form.resume_submit")
+                    session["post_login_redirect"] = url_for(
+                        "form.resume_submit",
+                        workflow_id=request.form["workflow_id"],
+                    )
                     return redirect(url_for("login.login"))
-                return render_template("form/loading.html")
+
+                return render_template(
+                    "form/loading.html",
+                    workflow_id=request.form["workflow_id"],
+                )
 
             if action == "save":
                 return jsonify({"success": True, "data": json_form})
@@ -176,14 +173,25 @@ def resume_submit():
     """
     if not session.get("access_token"):
         return redirect(url_for("login.login"))
-    tmpdir = session.get("submission_tmpdir")
+
+    try:
+        workflow = _get_workflow()
+    except WorkflowNotFound as exc:
+        return jsonify({"validation_errors": [str(exc)]}), 400
+
+    tmpdir = workflow.tmpdir
+
     pending_form_path = (
         os.path.join(tmpdir, "pending_form_data.json") if tmpdir else None
     )
     if not tmpdir or not pending_form_path or not os.path.isfile(pending_form_path):
         flash("No pending submission found.", "warning")
         return redirect(url_for("form.webform"))
-    return render_template("form/loading.html")
+
+    return render_template(
+        "form/loading.html",
+        workflow_id=request.args["workflow_id"],
+    )
 
 
 @form_bp.route("/do_submit", methods=["POST"])
@@ -194,15 +202,23 @@ def do_submit():
     Clears pending session data after upload and renders the success page
     with the record URL.
     """
-    tmpdir = session.get("submission_tmpdir")
+    try:
+        workflow = current_app.extensions["workflow_store"].get(
+            request.args.get("workflow_id")
+        )
+    except WorkflowNotFound as exc:
+        return jsonify({"validation_errors": [str(exc)]}), 400
+
+    tmpdir = workflow.tmpdir
 
     if not tmpdir:
         flash("No pending submission found. Please submit again.", "warning")
         return redirect(url_for("form.webform"))
 
     if is_submission_cancelled(tmpdir):
-        cleanup_tmpdir(tmpdir)
-        session.pop("submission_tmpdir", None)
+        current_app.extensions["workflow_store"].delete(
+            request.values.get("workflow_id")
+        )
         return redirect(url_for("form.webform"))
 
     pending_form_path = os.path.join(tmpdir, "pending_form_data.json")
@@ -222,15 +238,17 @@ def do_submit():
         invite_user("biosimdb", token)
 
         if is_submission_cancelled(tmpdir):
-            cleanup_tmpdir(tmpdir)
-            session.pop("submission_tmpdir", None)
+            current_app.extensions["workflow_store"].delete(
+                request.values.get("workflow_id")
+            )
             return redirect(url_for("form.webform"))
 
         draft_id = prepare_for_invenio(flat_form, tmpdir)
 
         if not draft_id:
-            cleanup_tmpdir(tmpdir)
-            session.pop("submission_tmpdir", None)
+            current_app.extensions["workflow_store"].delete(
+                request.values.get("workflow_id")
+            )
             flash("Upload failed. Please try again.", "danger")
             return redirect(url_for("form.webform"))
 
@@ -239,7 +257,10 @@ def do_submit():
 
         if status in (401, 403):
             session.pop("access_token", None)  # force fresh login
-            session["post_login_redirect"] = url_for("form.resume_submit")
+            session["post_login_redirect"] = url_for(
+                "form.resume_submit",
+                workflow_id=request.form["workflow_id"],
+            )
             flash(
                 "Your login session is no longer valid for upload. "
                 "Please sign in again and the submission will resume automatically.",
@@ -248,14 +269,14 @@ def do_submit():
             return redirect(url_for("login.login"))
 
         session.pop("access_token", None)  # force fresh login
-        cleanup_tmpdir(tmpdir)
-        session.pop("submission_tmpdir", None)
+        current_app.extensions["workflow_store"].delete(
+            request.values.get("workflow_id")
+        )
         flash("Upload failed unexpectedly. Please try again.", "danger")
         return redirect(url_for("form.webform"))
 
     # success: now clear submission data and logout user.
-    cleanup_tmpdir(tmpdir)
-    session.pop("submission_tmpdir", None)
+    current_app.extensions["workflow_store"].delete(request.values.get("workflow_id"))
     session.pop("access_token", None)
     session.pop("user_email", None)
     session.pop("post_login_redirect", None)
@@ -264,7 +285,6 @@ def do_submit():
     record_url = f"{BASE_URL}/uploads/{draft_id}"
     session["submitted_record_url"] = record_url
     return redirect(url_for("form.submit_success"))
-    # return render_template("form/submit_success.html", record_url=record_url)
 
 
 @form_bp.route("/cancel_submit", methods=["POST"])
@@ -275,14 +295,18 @@ def cancel_submit():
     still owns those files; do_submit checks the cancellation flag itself and
     performs its own cleanup once it is safe to do so.
     """
-    tmpdir = session.get("submission_tmpdir")
+    try:
+        workflow = current_app.extensions["workflow_store"].get(
+            request.args.get("workflow_id")
+        )
+    except WorkflowNotFound as exc:
+        return jsonify({"validation_errors": [str(exc)]}), 400
+
+    tmpdir = workflow.tmpdir
     mark_submission_cancelled(tmpdir)
 
     for key in (
-        "submission_tmpdir",
         "post_login_redirect",
-        "topo_path",
-        "traj_files",
         "access_token",
         "user_email",
     ):

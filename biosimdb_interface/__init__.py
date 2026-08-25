@@ -12,6 +12,8 @@ __version__ = "0.0.1"
 from dotenv import load_dotenv
 from flask import Flask
 
+from .form.workflows import WorkflowStore
+
 load_dotenv()
 # UPLOAD_FOLDER = "/tmp"
 
@@ -45,6 +47,7 @@ def create_app(test_config=None):
 
     # App and Invenio OAuth2 configuration — values loaded from .env
     app.config.from_mapping(
+        WORKFLOW_TTL_SECONDS=int(os.getenv("WORKFLOW_TTL_SECONDS", "14400")),
         UPLOAD_FOLDER=os.getenv("UPLOAD_FOLDER", "/tmp"),  # App specific
         CLIENT_ID=os.getenv("CLIENT_ID", ""),
         CLIENT_SECRET=os.getenv("CLIENT_SECRET", ""),
@@ -55,7 +58,7 @@ def create_app(test_config=None):
         API_BASE=os.getenv("API_BASE", ""),
         REDIRECT_URI=os.getenv("REDIRECT_URI", ""),
         SCOPES=os.getenv("SCOPES", "").strip(),
-    )  # invenio app configs
+    )
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -63,6 +66,10 @@ def create_app(test_config=None):
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
+
+    app.extensions["workflow_store"] = WorkflowStore(
+        ttl_seconds=app.config["WORKFLOW_TTL_SECONDS"]
+    )
 
     @app.context_processor
     def inject_base_url():

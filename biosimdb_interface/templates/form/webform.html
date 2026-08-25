@@ -98,7 +98,7 @@
             <section class="biosimdb-hero">
 
                 <a
-                href="{{ url_for('form.home') }}"
+                href="{{ url_for('home.home') }}"
                 rel="noopener"
                 class="biosimdb-feature-link"
                 >
@@ -350,6 +350,10 @@
 {% block scripts %}
 
 {{ super() }}
+<!-- state of metadata fields in form -->
+<script>
+    window.CLEAR_CLIENT_STATE = document.body.dataset.clearClientState === 'true';
+</script>
 
 <script
     type="module"

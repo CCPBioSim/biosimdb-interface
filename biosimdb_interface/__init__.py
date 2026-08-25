@@ -86,4 +86,8 @@ def create_app(test_config=None):
 
     app.register_blueprint(login_bp, url_prefix=app.config["APPLICATION_BASE"])
 
+    from .home import home_bp
+
+    app.register_blueprint(home_bp, url_prefix=app.config["APPLICATION_BASE"])
+
     return app

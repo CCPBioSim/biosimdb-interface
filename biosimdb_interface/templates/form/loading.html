@@ -3,22 +3,43 @@
   Intermediate page shown while a BioSimDB submission is in progress.
 
   Behaviour:
-    - Displays a spinner while an invisible form auto-submits via POST to form.do_submit.
-    - The hidden form carries the session cookie so the server can retrieve the pending submission.
-    - On completion, the server redirects to submit_success.html.
+    - Submits to form.do_submit via fetch so it can be cancelled client-side.
+    - On completion, navigates to the final response URL (success or webform).
+    - Cancel aborts the fetch and resets session state via form.cancel_submit.
 #}
 {% extends "main/base.html" %}
 {% block content %}
 <div class="container text-center mt-5">
     <div class="spinner-border text-primary mb-3" role="status"></div>
     <p class="text-muted">Submitting to BioSimDB, please wait...</p>
+    <button type="button" id="cancel-submit-btn" class="btn btn-outline-secondary mt-3">Cancel</button>
 </div>
-<form id="submit-form" method="POST" action="{{ url_for('form.do_submit') }}" style="display:none"></form>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
-    document.getElementById('submit-form').submit();
+    const controller = new AbortController();
+    let cancelled = false;
+
+    fetch("{{ url_for('form.do_submit') }}", {
+        method: "POST",
+        signal: controller.signal,
+    })
+    .then(response => {
+        if (cancelled) return;
+        window.location.replace(response.url);
+    })
+    .catch(err => {
+        if (err.name === 'AbortError') return; // handled by cancel button
+        window.location.replace("{{ url_for('form.webform') }}");
+    });
+
+    document.getElementById('cancel-submit-btn').addEventListener('click', () => {
+        cancelled = true;
+        controller.abort();
+        fetch("{{ url_for('form.cancel_submit') }}", { method: 'POST' })
+            .finally(() => window.location.replace("{{ url_for('form.webform') }}"));
+    });
 </script>
 {% endblock %}

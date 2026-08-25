@@ -19,7 +19,10 @@
     {% include 'main/head.html' %}
 </head>
 
-<body{% if JOOMLA_BASE_URL %} class="site com_ccpbiosim wrapper-static view-ourcommunity no-layout no-task itemid-138"{% endif %}>
+<body{% if JOOMLA_BASE_URL %} class="site com_ccpbiosim wrapper-static view-ourcommunity no-layout no-task itemid-138"{% endif %}
+
+data-clear-client-state="{{ clear_client_state | default(false) | tojson }}"
+>
 
     <!-- Alerts returned from flask -->
     {% with messages = get_flashed_messages(with_categories=true) %}

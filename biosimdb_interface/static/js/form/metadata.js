@@ -3,17 +3,7 @@ document.addEventListener('click', function(e) {
     if (e.target.classList.contains('extract-metadata-btn')) {
         // if (e.target.disabled) return; // Prevent double clicks
 
-        e.target.disabled = true;
-
-        // Add a wait spinner and grey out background page when data extraction is happening
-        const loadingOverlay = document.createElement('div');
-        loadingOverlay.id = 'loading-overlay';
-        loadingOverlay.style.cssText = 'position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.5);';
-        loadingOverlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-        document.body.appendChild(loadingOverlay);
-
-
-        e.target.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Extracting...';
+        showLoadingOverlay(e.target, 'Extracting...');
         setFieldsDisabled(true);
         const formData = new FormData();
 
@@ -42,26 +32,23 @@ document.addEventListener('click', function(e) {
                 saveFormState();
                 setFieldsDisabled(false);
                 if (data.message) {
-                    showAlert(data.message, 'success', 4000);
+                    showAlert(data.message, 'success', 5000);
                 }
                 if (data.validation_errors && data.validation_errors.length > 0) {
                     const [heading, ...errors] = data.validation_errors;
                     const list = errors.map(e => `<li>${e}</li>`).join('');
-                    showAlert(`<strong>${heading}</strong><ul class="mb-0 mt-1">${list}</ul>`, 'warning', 4000);
+                    showAlert(`<strong>${heading}</strong><ul class="mb-0 mt-1">${list}</ul>`, 'warning', 5000);
                 }
             }
         })
-        .finally(() => {
-            e.target.disabled = false;
-            e.target.textContent = 'Extract Metadata';
-            document.getElementById('loading-overlay')?.remove();
-        });
+        .finally(() => hideLoadingOverlay(e.target));
     }
 
     if (e.target.matches('input[name="submit"]')) {
         e.preventDefault();
         const form = document.getElementById('simulationForm');
         if (!requireExtraction(form)) return;
+        showLoadingOverlay(e.target, 'Submitting...');
         validateAndSubmit(form, () => {
             sessionStorage.removeItem('formState');
             sessionStorage.removeItem('extractedMetadata');
@@ -69,6 +56,8 @@ document.addEventListener('click', function(e) {
             hidden.type = 'hidden'; hidden.name = 'submit'; hidden.value = '1';
             form.appendChild(hidden);
             HTMLFormElement.prototype.submit.call(form);
+        }).then(success => {
+            if (!success) hideLoadingOverlay(e.target);
         });
     }
 
@@ -76,13 +65,14 @@ document.addEventListener('click', function(e) {
         e.preventDefault();
         const form = document.getElementById('simulationForm');
         if (!requireExtraction(form)) return;
+        showLoadingOverlay(e.target, 'Saving...');
         validateAndSubmit(form, (data) => {
             const blob = new Blob([JSON.stringify(data.data, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url; a.download = 'simulation_metadata.json'; a.click();
             URL.revokeObjectURL(url);
-        });
+        }).finally(() => hideLoadingOverlay(e.target));
     }
 
     if (e.target.classList.contains('add-instance')) {
@@ -127,34 +117,7 @@ document.addEventListener('click', function(e) {
         const form = document.getElementById('simulationForm');
 
         // Clear all non-button inputs/selects/textareas
-        form.querySelectorAll('input, select, textarea').forEach(el => {
-            const type = (el.type || '').toLowerCase();
-
-            if (type === 'submit' || type === 'button' || type === 'hidden') return;
-
-            if (type === 'checkbox' || type === 'radio') {
-                el.checked = false;
-            } else if (type === 'file') {
-                el.value = '';
-            } else if (el.tagName === 'SELECT') {
-                el.selectedIndex = 0;
-            } else {
-                el.value = '';
-            }
-        });
-
-        // Keep only first molecule_ID instance per container
-        form.querySelectorAll('.multiple-field-container').forEach(container => {
-            const instances = container.querySelectorAll('.field-instance');
-            instances.forEach((instance, idx) => {
-                if (idx > 0) instance.remove();
-            });
-            renumberInstances(container);
-        });
-
-        setFieldsDisabled(true);
-        sessionStorage.removeItem('extractedMetadata');
-        sessionStorage.removeItem('formState');
+        lockForm();
     }
 
 });
@@ -355,6 +318,12 @@ function restoreFormState() {
 // On page load: restore extracted metadata and form state from sessionStorage,
 // or disable fields if the form is empty.
 document.addEventListener('DOMContentLoaded', () => {
+
+    if (window.CLEAR_CLIENT_STATE) {
+        lockForm();
+        return;
+    }
+
     const saved = sessionStorage.getItem('extractedMetadata');
     if (saved) {
         populateFields(JSON.parse(saved));
@@ -362,14 +331,15 @@ document.addEventListener('DOMContentLoaded', () => {
         setFieldsDisabled(false);
         return;
     }
-    const hasValues = Array.from(
-        document.querySelectorAll('#simulationForm input, #simulationForm select, #simulationForm textarea')
-    ).some(el => {
-        const type = (el.type || '').toLowerCase();
-        if (type === 'file' || type === 'button' || type === 'submit') return false;
-        return type === 'checkbox' ? el.checked : el.value.trim() !== '';
-    });
-    if (!hasValues) setFieldsDisabled(true);
+    lockForm();
+});
+
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        if (window.CLEAR_CLIENT_STATE || !sessionStorage.getItem('extractedMetadata')) {
+            lockForm();
+        }
+    }
 });
 
 // Persist form state on any user input so it survives page refreshes.
@@ -402,6 +372,23 @@ function showAlert(html, type = 'warning', timeout = 50000) {
 }
 
 /**
+ * Fade out and remove an existing Bootstrap alert after a delay.
+ *
+ * @param {HTMLElement} alertEl - Rendered Bootstrap alert element.
+ * @param {number} timeout - Delay in milliseconds.
+ */
+function dismissAlertAfter(alertEl, timeout = 5000) {
+    setTimeout(() => {
+        alertEl.classList.remove('show');
+        setTimeout(() => alertEl.remove(), 150);
+    }, timeout);
+}
+
+document.querySelectorAll('.alert').forEach((alertEl) => {
+    dismissAlertAfter(alertEl, 5000);
+});
+
+/**
  * Guards save/submit actions by checking that metadata has been extracted.
  * Uses native browser validation UI (`reportValidity`) to surface the error on the topology input.
  * @param {HTMLFormElement} form - The simulation form element.
@@ -427,16 +414,83 @@ function requireExtraction(form) {
 function validateAndSubmit(form, onSuccess) {
     const formData = new FormData(form);
     formData.append('save', '1');
-    fetch(window.APPLICATION_BASE + '/webform', { method: 'POST', body: formData })
+    return fetch(window.APPLICATION_BASE + '/webform', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
             if (data.validation_errors && data.validation_errors.length > 0) {
                 const [heading, ...errors] = data.validation_errors;
                 const list = errors.map(err => `<li>${err}</li>`).join('');
-                showAlert(`${heading}<ul class="mb-0 mt-1">${list}</ul>`, 'warning', 4000);
-            } else if (data.success) {
-                onSuccess(data);
+                showAlert(`${heading}<ul class="mb-0 mt-1">${list}</ul>`, 'warning', 5000);
+                return false;
             }
+            if (data.success) {
+                onSuccess(data);
+                return true;
+            }
+            return false;
         })
-        .catch(err => showAlert(`<strong>Error:</strong> ${err.message}`, 'danger', 5000));
+        .catch(err => {
+            showAlert(`<strong>Error:</strong> ${err.message}`, 'danger', 5000);
+            return false;
+        });
+}
+
+/**
+ * Resets the form to its initial locked state: clears all field values,
+ * removes cached extraction state, and disables editable fields.
+ */
+function lockForm() {
+    document.querySelectorAll('#simulationForm input, #simulationForm select, #simulationForm textarea').forEach(el => {
+        const type = (el.type || '').toLowerCase();
+        if (type === 'submit' || type === 'button' || type === 'hidden') return;
+
+        if (type === 'checkbox' || type === 'radio') {
+            el.checked = false;
+        } else if (el.tagName === 'SELECT') {
+            el.selectedIndex = 0;
+        } else {
+            el.value = '';
+        }
+    });
+
+    document.querySelectorAll('#simulationForm .multiple-field-container').forEach(container => {
+        container.querySelectorAll('.field-instance').forEach((instance, idx) => {
+            if (idx > 0) instance.remove();
+        });
+        renumberInstances(container);
+    });
+
+    sessionStorage.removeItem('extractedMetadata');
+    sessionStorage.removeItem('formState');
+    setFieldsDisabled(true);
+
+    fetch(window.APPLICATION_BASE + '/clear_extraction', { method: 'POST' });
+}
+
+/**
+ * Shows a full-page wait overlay and puts a button into a disabled "working" state.
+ * @param {HTMLElement} button - The button that triggered the action.
+ * @param {string} loadingText - Text to show on the button while working.
+ */
+function showLoadingOverlay(button, loadingText) {
+    button.dataset.originalText = button.textContent;
+    button.disabled = true;
+    button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>${loadingText}`;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.style.cssText = 'position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.5);';
+    overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+    document.body.appendChild(overlay);
+}
+
+/**
+ * Restores a button's original label and removes the wait overlay.
+ * @param {HTMLElement} button - The button to restore.
+ */
+function hideLoadingOverlay(button) {
+    button.disabled = false;
+    button.textContent = button.dataset.originalText ?? button.textContent;
+    delete button.dataset.originalText;
+    document.getElementById('loading-overlay')?.remove();
 }

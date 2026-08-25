@@ -15,10 +15,9 @@
 {% block content %}
 <div class="container text-center mt-5">
     <p class="text-success fw-semibold">BioSimDB record created successfully! Please complete your submission there.</p>
-    <p class="text-muted">Redirecting to your record in <span id="countdown">10</span> seconds...</p>
     <div class="d-inline-flex gap-2">
-        <a href="{{ record_url }}" target="_blank" rel="noopener" class="btn btn-success" onclick="clearInterval(interval); document.getElementById('countdown').closest('p').style.display='none'">View Record</a>
-        <a href="{{ url_for('form.webform') }}" target="_blank" rel="noopener" class="btn btn-outline-secondary" onclick="clearInterval(interval); document.getElementById('countdown').closest('p').style.display='none'">Return to Webform</a>
+        <a href="{{ record_url }}" target="_blank" rel="noopener" class="btn btn-success" >View Record</a>
+        <a href="{{ url_for('form.webform') }}" target="_blank" rel="noopener" class="btn btn-outline-secondary" >Return to Webform</a>
     </div>
 </div>
 {% endblock %}
@@ -30,20 +29,5 @@
         sessionStorage.removeItem('formState');
         sessionStorage.removeItem('extractedMetadata');
     });
-
-    let seconds = 10;
-    const countdown = document.getElementById('countdown');
-    const interval = setInterval(() => {
-        seconds--;
-        countdown.textContent = seconds;
-        if (seconds <= 0) {
-            clearInterval(interval);
-            const win = window.open('{{ record_url }}', '_blank', 'noopener,noreferrer');
-            if (!win) {
-                // Fallback if popup was blocked
-                window.location = '{{ record_url }}';
-            }
-        }
-    }, 1000);
 </script>
 {% endblock %}

@@ -5,22 +5,80 @@ import json
 import os
 import shutil
 
-from biosim_extractor.metadata.filemetadata import files_metadata
+from biosim_extractor.metadata.filemetadata import file_metadata, files_metadata
 from flask import current_app, request, session
 from werkzeug.utils import secure_filename
 
 from .invenio import run_record_upload
-from .utils import fill_invenio_metadata, form_to_json, make_upload_tmpdir
+from .utils import fill_invenio_metadata, form_to_json
 
 PENDING_FORM_FILENAME = "pending_form_data.json"
 PENDING_UPLOADS_FILENAME = "pending_uploads.json"
 SIM_METADATA_FILENAME = "simulation_metadata.json"
+PENDING_FILE_META_FILENAME = "pending_file_meta.json"
+CANCELLED_FLAG_FILENAME = "CANCELLED"
 
-INTERNAL_TMP_FILENAMES = {
-    PENDING_FORM_FILENAME,
-    PENDING_UPLOADS_FILENAME,
-    "metadata.json",
-}
+
+def _pending_file_meta_path(tmpdir):
+    return os.path.join(tmpdir, PENDING_FILE_META_FILENAME)
+
+
+def _save_pending_file_meta(tmpdir, file_meta):
+    with open(_pending_file_meta_path(tmpdir), "w") as f:
+        json.dump(file_meta, f)
+
+
+def _load_pending_file_meta(tmpdir):
+    path = _pending_file_meta_path(tmpdir)
+    if not os.path.isfile(path):
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
+def cache_extracted_files(tmpdir, saved_files):
+    """Persist saved file paths and computed file metadata for later reuse."""
+    file_meta = files_metadata(saved_files)
+
+    with open(_pending_uploads_path(tmpdir), "w") as f:
+        json.dump(saved_files, f)
+    _save_pending_file_meta(tmpdir, file_meta)
+
+    session["topo_path"] = (
+        saved_files["topology"][0] if saved_files["topology"] else None
+    )
+    session["traj_files"] = saved_files["trajectory"]
+    return file_meta
+
+
+def verify_cached_file_meta(tmpdir):
+    """Verify tmpdir files against cached hashes from pending_file_meta.json.
+
+    Returns:
+        tuple[bool, str | None]: (is_valid, error_message)
+    """
+    cached = _load_pending_file_meta(tmpdir)
+    if not cached:
+        return False, "Missing cached file metadata. Please extract metadata again."
+
+    for item in cached:
+        role = item.get("file_role")
+        name = item.get("file_name")
+        expected_hash = item.get("file_hash")
+        algo = item.get("file_hash_algorithm", "md5")
+
+        if role not in ("topology", "trajectory") or not name or not expected_hash:
+            continue
+
+        path = os.path.join(tmpdir, name)
+        if not os.path.isfile(path):
+            return False, f"Missing file in submission directory: {name}"
+
+        current = file_metadata(path, role=role, hash_algorithm=algo)
+        if current["file_hash"] != expected_hash:
+            return False, f"File changed since extraction: {name}"
+
+    return True, None
 
 
 def _pending_form_path(tmpdir):
@@ -79,8 +137,6 @@ def _load_pending_upload_paths(tmpdir):
     with open(path) as f:
         saved_files = json.load(f)
     files = [p for p in _flatten_saved_files(saved_files) if os.path.isfile(p)]
-
-    # Optional: keep this if simulation_metadata.json must be included in record files
     sim_meta_path = os.path.join(tmpdir, SIM_METADATA_FILENAME)
     if os.path.isfile(sim_meta_path):
         files.append(sim_meta_path)
@@ -88,17 +144,62 @@ def _load_pending_upload_paths(tmpdir):
     return files
 
 
-def _save_request_files(tmpdir):
-    """Save uploaded request files into a temporary directory grouped by role.
+def _paths_are_reusable(tmpdir, topo_path, traj_paths):
+    """Check whether previously saved simulation paths can be reused safely.
 
-    Maps the trajectory[] field to trajectory and keeps other field names as roles.
+    A path set is reusable when:
+    - topology and trajectory paths are present,
+    - each path exists as a file, and
+    - each path is located under tmpdir.
 
     Args:
-        tmpdir: Path to the temporary directory where uploaded files are written.
+        tmpdir (str): Temporary directory expected to contain saved files.
+        topo_path (str | None): Saved topology file path.
+        traj_paths (list[str] | None): Saved trajectory file paths.
 
     Returns:
-        Dictionary mapping file roles to lists of saved file paths.
+        bool: True if all paths are valid and under tmpdir; otherwise False.
     """
+    if not topo_path or not traj_paths:
+        return False
+
+    tmpdir_abs = os.path.abspath(tmpdir)
+    all_paths = [topo_path, *traj_paths]
+
+    for path in all_paths:
+        if not path or not os.path.isfile(path):
+            return False
+        path_abs = os.path.abspath(path)
+        if os.path.commonpath([tmpdir_abs, path_abs]) != tmpdir_abs:
+            return False
+
+    return True
+
+
+def _save_request_files(tmpdir):
+    """Save uploaded request files into tmpdir, or reuse existing saved files.
+
+    Reuses session-stored paths when they still point to valid files under
+    tmpdir. Otherwise saves files from request.files, grouping by role.
+
+    Notes:
+        The HTML field name trajectory[] is normalized to the "trajectory" role.
+
+    Args:
+        tmpdir (str): Temporary directory where uploaded files are stored.
+
+    Returns:
+        dict[str, list[str]]: Mapping of file role to saved file paths.
+    """
+    topo_path = session.get("topo_path")
+    traj_files = session.get("traj_files") or []
+
+    if _paths_are_reusable(tmpdir, topo_path, traj_files):
+        return {
+            "topology": [topo_path],
+            "trajectory": traj_files,
+        }
+
     saved_files = {"topology": [], "trajectory": []}
     for field in request.files:
         role = "trajectory" if field == "trajectory[]" else field
@@ -107,6 +208,11 @@ def _save_request_files(tmpdir):
                 path = os.path.join(tmpdir, secure_filename(file.filename))
                 file.save(path)
                 saved_files.setdefault(role, []).append(path)
+
+    if saved_files["topology"]:
+        session["topo_path"] = saved_files["topology"][0]
+    session["traj_files"] = saved_files["trajectory"]
+
     return saved_files
 
 
@@ -126,28 +232,41 @@ def _save_files_and_extract_metadata(tmpdir):
     return saved_files, file_meta
 
 
-def extract_uploaded_file_metadata():
-    """Extract file metadata from the current request's uploaded files."""
-    tmpdir = make_upload_tmpdir("biosimdb_file_metadata_")
+def extract_uploaded_file_metadata(tmpdir):
+    """Extract metadata for uploaded simulation files.
+
+    Reuses cached pending_file_meta.json when present, otherwise saves or
+    reuses uploaded files and computes metadata.
+
+    Args:
+        tmpdir (str): Temporary directory where uploaded files are stored.
+
+    Returns:
+        list[dict]: Extracted metadata records for uploaded files.
+    """
+    cached = _load_pending_file_meta(tmpdir)
+    if cached is not None:
+        return cached
+
     try:
         _, file_meta = _save_files_and_extract_metadata(tmpdir)
+        _save_pending_file_meta(tmpdir, file_meta)
         return file_meta
     finally:
         for field in request.files:
             for file in request.files.getlist(field):
                 file.stream.seek(0)
-        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def _data_collections_upload(metadata_path, files_path):
     """Upload metadata as a draft PSDI data-collections record.
 
     Args:
-        metadata_path: Path to the JSON file containing record metadata.
-        files_path: List of file paths to upload alongside the record.
+    metadata_path: Path to the JSON file containing record metadata.
+    files_path: List of file paths to upload alongside the record.
 
     Returns:
-        tuple: (repository, draft_id) from the Invenio upload response.
+    tuple: (repository, draft_id) from the Invenio upload response.
     """
     token = session.get("access_token")
     API_BASE = current_app.config["API_BASE"]
@@ -160,6 +279,16 @@ def _data_collections_upload(metadata_path, files_path):
         community="biosimdb",
     )
     return repository, draft_id
+
+
+def cleanup_tmpdir(tmpdir):
+    """Remove a temporary submission directory if it exists.
+
+    Args:
+    tmpdir (str | None): Directory path to delete.
+    """
+    if tmpdir and os.path.isdir(tmpdir):
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def save_pending_submission(json_form=None):
@@ -178,8 +307,21 @@ def save_pending_submission(json_form=None):
     Writes JSON artifacts under tmpdir.
     Sets session["pending_files_dir"].
     """
-    tmpdir = make_upload_tmpdir("biosimdb_pending_")
-    saved_files, file_meta = _save_files_and_extract_metadata(tmpdir)
+    tmpdir = session.get("submission_tmpdir")
+    # saved_files, file_meta = _save_files_and_extract_metadata(tmpdir)
+
+    topo_path = session.get("topo_path")
+    traj_files = session.get("traj_files") or []
+    saved_files = {
+        "topology": [topo_path] if topo_path else [],
+        "trajectory": traj_files,
+    }
+
+    file_meta = _load_pending_file_meta(tmpdir)
+    if file_meta is None:
+        # Fallback only if cache missing
+        file_meta = files_metadata(saved_files)
+        _save_pending_file_meta(tmpdir, file_meta)
 
     # Persist exact user-uploaded paths for later allowlist upload
     with open(_pending_uploads_path(tmpdir), "w") as f:
@@ -193,8 +335,6 @@ def save_pending_submission(json_form=None):
 
     with open(_pending_form_path(tmpdir), "w") as f:
         json.dump(request.form.to_dict(flat=False), f)
-
-    session["pending_files_dir"] = tmpdir
 
 
 def prepare_for_invenio(form_data, tmpdir):
@@ -223,3 +363,15 @@ def prepare_for_invenio(form_data, tmpdir):
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
     return draft_id
+
+
+def mark_submission_cancelled(tmpdir):
+    """Signal an in-flight do_submit to stop, without touching its files."""
+    if tmpdir and os.path.isdir(tmpdir):
+        open(os.path.join(tmpdir, CANCELLED_FLAG_FILENAME), "w").close()
+
+
+def is_submission_cancelled(tmpdir):
+    return bool(tmpdir) and os.path.isfile(
+        os.path.join(tmpdir, CANCELLED_FLAG_FILENAME)
+    )

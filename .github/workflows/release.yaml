@@ -21,23 +21,39 @@ jobs:
       uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
     - name: Set up Python
-      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: 3.14.7
 
-    - name: Get latest release from pip
-      id: latestreleased
-      run: |
-        PREVIOUS_VERSION=$(python -m pip index versions biosimdb-interface | grep "biosimdb-interface" | cut -d "(" -f2 | cut -d ")" -f1)
-        echo "pip_tag=$PREVIOUS_VERSION" >> "$GITHUB_OUTPUT"
-        echo $PREVIOUS_VERSION
+    - name: Checkout repository (full history and tags)
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      with:
+        fetch-depth: 0
 
-    - name: version comparison
-      id: compare
+    - name: Ensure version is greater than latest git tag
       run: |
-        pip3 install semver
-        output=$(pysemver compare ${{ steps.latestreleased.outputs.pip_tag }} ${{ github.event.inputs.version }})
-        if [ $output -ge 0 ]; then exit 1; fi
+        NEW_VERSION="${{ github.event.inputs.version }}"
+        git fetch --tags --force
+
+        LATEST_TAG=$(git tag --list | sed 's/^v//' | sort -V | tail -n 1)
+
+        if [ -z "$LATEST_TAG" ]; then
+          echo "No existing tags found; accepting version $NEW_VERSION"
+          exit 0
+        fi
+
+        if [ "$NEW_VERSION" = "$LATEST_TAG" ]; then
+          echo "Input version equals latest tag: $LATEST_TAG"
+          exit 1
+        fi
+
+        HIGHEST=$(printf '%s\n%s\n' "$LATEST_TAG" "$NEW_VERSION" | sort -V | tail -n 1)
+        if [ "$HIGHEST" != "$NEW_VERSION" ]; then
+          echo "Input version ($NEW_VERSION) must be greater than latest tag ($LATEST_TAG)"
+          exit 1
+        fi
+
+        echo "Version check passed: $LATEST_TAG -> $NEW_VERSION"
 
   version:
     name: prepare ${{ github.event.inputs.version }}

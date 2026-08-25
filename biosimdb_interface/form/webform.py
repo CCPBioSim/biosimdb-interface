@@ -117,7 +117,7 @@ def webform():
 
             if action == "save":
                 json_form["files"] = extract_uploaded_file_metadata(tmpdir)
-
+            print(json_form)
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
 
             validation_errors = []

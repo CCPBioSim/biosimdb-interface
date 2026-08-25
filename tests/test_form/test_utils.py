@@ -63,3 +63,14 @@ def test_form_to_json_direct_list_assignment():
     d = {}
     _set_nested(d, ["items", "1"], "val")
     assert d == {"items": ["val"]}
+
+
+def test_form_to_json_multiselect_single_value_stays_list():
+    """A single selection from a multivalued HTML field remains a list."""
+    result = form_to_json(
+        {"stages[minimisation][1][minimisation_algorithm][]": "Steepest Descent"}
+    )
+
+    assert result == {
+        "stages": {"minimisation": [{"minimisation_algorithm": ["Steepest Descent"]}]}
+    }

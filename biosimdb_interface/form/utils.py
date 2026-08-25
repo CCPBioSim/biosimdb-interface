@@ -165,12 +165,12 @@ def form_to_json(form):
                     value = bool(value)
             converted_values.append(value)
 
-        # For repeated keys keep list (after dropping empty placeholders);
-        # for single keys keep scalar to preserve existing behavior.
-        if len(converted_values) > 1:
-            value_out = [v for v in converted_values if v != ""]
-        else:
-            value_out = converted_values[0] if converted_values else ""
+            # HTML names ending in [] represent schema multivalued fields, even when
+            # the user selects only one option.
+            if key.endswith("[]"):
+                value_out = [value for value in converted_values if value != ""]
+            else:
+                value_out = converted_values[0] if converted_values else ""
 
         _set_nested(data, parts, value_out)
     return data

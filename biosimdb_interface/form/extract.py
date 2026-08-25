@@ -10,12 +10,12 @@ optionally validates the result against the BioSim schema.
 import os
 
 from biosim_extractor.metadata.populatemetadata import MetadataPopulator
-from flask import jsonify, request, session
+from flask import current_app, jsonify, request
 from werkzeug.utils import secure_filename
 
 from . import form_bp
-from .upload import cache_extracted_files, cleanup_tmpdir
-from .utils import make_upload_tmpdir
+from .upload import cache_extracted_files
+from .workflows import WorkflowNotFound
 
 
 def extract_files_validate(top_file, traj_file):
@@ -67,13 +67,19 @@ def extract_metadata():
         - ``{"simulation_metadata": ..., "validation_errors": [...]}`` if schema validation fails.
         - ``{"error": "..."}`` with status 400 if files are missing, or 500 on unexpected error.
     """
-    # clear the existing tmpdir from previous extraction
-    tmpdir = session.get("submission_tmpdir")
-    if tmpdir:
-        cleanup_tmpdir(tmpdir)
-        session.pop("submission_tmpdir", None)
-    tmpdir = make_upload_tmpdir("biosimdb_submission_")
-    session["submission_tmpdir"] = tmpdir
+    workflow_id = request.form.get("workflow_id")
+    topology = request.files.get("topology")
+    trajectories = request.files.getlist("trajectory[]")
+
+    if not topology or not trajectories:
+        return jsonify({"error": "Simulation files are missing."}), 400
+
+    try:
+        workflow = current_app.extensions["workflow_store"].reset(workflow_id)
+    except WorkflowNotFound as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    tmpdir = workflow.tmpdir
 
     try:
         topology = request.files.get("topology")
@@ -96,9 +102,7 @@ def extract_metadata():
 
         result, validation_errors = extract_files_validate(topo_path, traj_files)
 
-        if len(validation_errors) > 0:
-            cleanup_tmpdir(tmpdir)
-            session.pop("submission_tmpdir", None)
+        if validation_errors:
             return jsonify(
                 {
                     "simulation_metadata": result,
@@ -114,6 +118,7 @@ def extract_metadata():
             )
 
     except Exception as e:
+        current_app.extensions["workflow_store"].delete(workflow_id)
         print(f"ERROR: {e}")
         import traceback
 
@@ -123,9 +128,6 @@ def extract_metadata():
 
 @form_bp.route("/clear_extraction", methods=["POST"])
 def clear_extraction():
-    """Discard extracted files and reset the pending submission tmpdir."""
-    tmpdir = session.get("submission_tmpdir")
-    cleanup_tmpdir(tmpdir)
-    for key in ("submission_tmpdir", "topo_path", "traj_files"):
-        session.pop(key, None)
+    """Delete only the current tab's extracted workflow files."""
+    current_app.extensions["workflow_store"].delete(request.form.get("workflow_id"))
     return jsonify({"success": True})

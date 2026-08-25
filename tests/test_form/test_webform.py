@@ -1,6 +1,5 @@
 import json
 import os
-import tempfile
 from unittest.mock import patch
 
 
@@ -12,9 +11,6 @@ def _set_extracted_files(client, tmp_path, token=None):
     trajectory.write_bytes(b"fake")
 
     with client.session_transaction() as sess:
-        sess["submission_tmpdir"] = str(tmp_path)
-        sess["topo_path"] = str(topology)
-        sess["traj_files"] = [str(trajectory)]
         if token:
             sess["access_token"] = token
 
@@ -25,10 +21,8 @@ def test_webform_get(client):
     assert b"Extract Metadata" in response.data
 
 
-def test_submit_without_login_redirects(client, tmp_path):
-    """Submitting extracted files without a token redirects to login."""
-    _set_extracted_files(client, tmp_path)
-
+def test_submit_without_login_redirects(client, extracted_workflow):
+    """Submitting an extracted workflow without login redirects to login."""
     with (
         patch(
             "biosimdb_interface.form.webform.validate_with_mdanalysis",
@@ -40,16 +34,20 @@ def test_submit_without_login_redirects(client, tmp_path):
         ),
         patch("biosimdb_interface.form.webform.validate_metadata"),
     ):
-        response = client.post("/webform", data={"submit": "submit"})
+        response = client.post(
+            "/webform",
+            data={
+                "workflow_id": extracted_workflow.workflow_id,
+                "submit": "submit",
+            },
+        )
 
     assert response.status_code == 302
     assert "/login" in response.headers["Location"]
 
 
-def test_metadata_download(client, tmp_path):
-    """Save returns JSON after files have been extracted."""
-    _set_extracted_files(client, tmp_path)
-
+def test_metadata_download(client, extracted_workflow):
+    """Save returns metadata from the extracted tab workflow."""
     with (
         patch(
             "biosimdb_interface.form.webform.validate_with_mdanalysis",
@@ -63,14 +61,19 @@ def test_metadata_download(client, tmp_path):
     ):
         response = client.post(
             "/webform",
-            data={"save": "1", "simulation[1][simulation_name]": "test_sim"},
+            data={
+                "workflow_id": extracted_workflow.workflow_id,
+                "save": "1",
+                "simulation[1][simulation_name]": "test_sim",
+            },
         )
 
     assert response.status_code == 200
 
 
-def test_submit_with_token_renders_loading(client, tmp_path):
-    _set_extracted_files(client, tmp_path, token="tok")
+def test_submit_with_token_renders_loading(client, extracted_workflow):
+    with client.session_transaction() as sess:
+        sess["access_token"] = "tok"
 
     with (
         patch(
@@ -84,20 +87,26 @@ def test_submit_with_token_renders_loading(client, tmp_path):
         patch("biosimdb_interface.form.webform.validate_metadata"),
         patch("biosimdb_interface.form.webform.save_pending_submission"),
     ):
-        response = client.post("/webform", data={"submit": "1"})
+        response = client.post(
+            "/webform",
+            data={
+                "workflow_id": extracted_workflow.workflow_id,
+                "submit": "1",
+            },
+        )
 
     assert response.status_code == 200
     assert b"Submitting" in response.data
 
 
-def test_resume_submit_with_pending_data(client):
-    """resume_submit renders loading page when session has pending submission."""
-    tmpdir = tempfile.mkdtemp()
-    with open(os.path.join(tmpdir, "pending_form_data.json"), "w") as f:
+def test_resume_submit_with_pending_data(client, workflow):
+    """Resume resolves the workflow ID passed in the query string."""
+    with open(os.path.join(workflow.tmpdir, "pending_form_data.json"), "w") as f:
         json.dump({"x": ["y"]}, f)
 
     with client.session_transaction() as sess:
         sess["access_token"] = "tok"
-        sess["submission_tmpdir"] = tmpdir
-    response = client.get("/resume_submit")
+
+    response = client.get(f"/resume_submit?workflow_id={workflow.workflow_id}")
+
     assert response.status_code == 200

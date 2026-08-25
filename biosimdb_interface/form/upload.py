@@ -36,18 +36,28 @@ def _load_pending_file_meta(tmpdir):
         return json.load(f)
 
 
+def load_extracted_files(tmpdir):
+    """Return topology and trajectory paths cached during extraction."""
+    with open(_pending_uploads_path(tmpdir)) as f:
+        saved_files = json.load(f)
+
+    topology = saved_files.get("topology", [])
+    trajectories = saved_files.get("trajectory", [])
+
+    return (
+        topology[0] if topology else None,
+        trajectories,
+    )
+
+
 def cache_extracted_files(tmpdir, saved_files):
-    """Persist saved file paths and computed file metadata for later reuse."""
+    """Persist extracted file paths and file metadata inside one workflow directory."""
     file_meta = files_metadata(saved_files)
 
     with open(_pending_uploads_path(tmpdir), "w") as f:
         json.dump(saved_files, f)
     _save_pending_file_meta(tmpdir, file_meta)
 
-    session["topo_path"] = (
-        saved_files["topology"][0] if saved_files["topology"] else None
-    )
-    session["traj_files"] = saved_files["trajectory"]
     return file_meta
 
 
@@ -191,8 +201,10 @@ def _save_request_files(tmpdir):
     Returns:
         dict[str, list[str]]: Mapping of file role to saved file paths.
     """
-    topo_path = session.get("topo_path")
-    traj_files = session.get("traj_files") or []
+    # topo_path = session.get("topo_path")
+    # traj_files = session.get("traj_files") or []
+
+    topo_path, traj_files = load_extracted_files(tmpdir)
 
     if _paths_are_reusable(tmpdir, topo_path, traj_files):
         return {
@@ -208,10 +220,6 @@ def _save_request_files(tmpdir):
                 path = os.path.join(tmpdir, secure_filename(file.filename))
                 file.save(path)
                 saved_files.setdefault(role, []).append(path)
-
-    if saved_files["topology"]:
-        session["topo_path"] = saved_files["topology"][0]
-    session["traj_files"] = saved_files["trajectory"]
 
     return saved_files
 
@@ -291,50 +299,19 @@ def cleanup_tmpdir(tmpdir):
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def save_pending_submission(json_form=None):
-    """Persist uploaded files and form payload for post-login submission resume.
+def save_pending_submission(json_form, tmpdir):
+    """Persist validated submission data in the given workflow directory."""
+    file_meta = _load_pending_file_meta(tmpdir) or []
 
-    Saves uploaded request files into a temp directory, writes a manifest of
-    allowed upload paths, optionally writes simulation_metadata.json, and stores
-    the form payload as pending_form_data.json.
-
-    Args:
-    json_form (dict | None): Validated BioSim metadata to persist. When
-    provided, file metadata is attached at json_form["files"] before
-    writing simulation_metadata.json.
-
-    Side Effects:
-    Writes JSON artifacts under tmpdir.
-    Sets session["pending_files_dir"].
-    """
-    tmpdir = session.get("submission_tmpdir")
-    # saved_files, file_meta = _save_files_and_extract_metadata(tmpdir)
-
-    topo_path = session.get("topo_path")
-    traj_files = session.get("traj_files") or []
-    saved_files = {
-        "topology": [topo_path] if topo_path else [],
-        "trajectory": traj_files,
-    }
-
-    file_meta = _load_pending_file_meta(tmpdir)
-    if file_meta is None:
-        # Fallback only if cache missing
-        file_meta = files_metadata(saved_files)
-        _save_pending_file_meta(tmpdir, file_meta)
-
-    # Persist exact user-uploaded paths for later allowlist upload
-    with open(_pending_uploads_path(tmpdir), "w") as f:
-        json.dump(saved_files, f)
-
-    if json_form is not None:
-        json_form["files"] = file_meta
-        json_path = os.path.join(tmpdir, SIM_METADATA_FILENAME)
-        with open(json_path, "w") as f:
-            json.dump(json_form, f, indent=2)
+    json_form["files"] = file_meta
+    with open(os.path.join(tmpdir, SIM_METADATA_FILENAME), "w") as f:
+        json.dump(json_form, f, indent=2)
 
     with open(_pending_form_path(tmpdir), "w") as f:
-        json.dump(request.form.to_dict(flat=False), f)
+        form_values = request.form.to_dict(flat=False)
+        form_values.pop("workflow_id", None)
+
+        json.dump(form_values, f)
 
 
 def prepare_for_invenio(form_data, tmpdir):

@@ -15,13 +15,13 @@ from flask import (
     session,
     url_for,
 )
-from werkzeug.datastructures import ImmutableMultiDict
 
 from biosimdb_interface.login.community_invite import invite_user
 from biosimdb_interface.schema.webform import WEBFORM_SCHEMA, get_simulation_metadata
 
 from . import form_bp
 from .upload import (
+    SIM_METADATA_FILENAME,
     extract_uploaded_file_metadata,
     is_submission_cancelled,
     load_extracted_files,
@@ -117,7 +117,6 @@ def webform():
 
             if action == "save":
                 json_form["files"] = extract_uploaded_file_metadata(tmpdir)
-            print(json_form)
             biosimschema_path = os.getenv("BIOSIM_SCHEMA_PATH", "")
 
             validation_errors = []
@@ -221,17 +220,13 @@ def do_submit():
         )
         return redirect(url_for("form.webform"))
 
-    pending_form_path = os.path.join(tmpdir, "pending_form_data.json")
-    if not os.path.isfile(pending_form_path):
+    sim_metadata_path = os.path.join(tmpdir, SIM_METADATA_FILENAME)
+    if not os.path.isfile(sim_metadata_path):
         flash("No pending submission found. Please submit again.", "warning")
         return redirect(url_for("form.webform"))
 
-    with open(pending_form_path) as f:
-        form_data = json.load(f)
-
-    flat_form = ImmutableMultiDict(
-        [(k, v) for k, vals in form_data.items() for v in vals]
-    )
+    with open(sim_metadata_path) as f:
+        sim_metadata = json.load(f)
 
     try:
         token = session.get("access_token")
@@ -243,7 +238,7 @@ def do_submit():
             )
             return redirect(url_for("form.webform"))
 
-        draft_id = prepare_for_invenio(flat_form, tmpdir)
+        draft_id = prepare_for_invenio(sim_metadata, tmpdir)
 
         if not draft_id:
             current_app.extensions["workflow_store"].delete(

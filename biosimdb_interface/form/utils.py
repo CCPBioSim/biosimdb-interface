@@ -27,9 +27,7 @@ def fill_invenio_metadata(form_data):
         dict: Invenio-compatible record dictionary with custom_fields populated.
     """
     invenio_data = copy.deepcopy(INVENIO_FORM_EMPTY)
-    # invenio_data["custom_fields"]["dsmd"] = [form_data]
-    # exclude dsmd template until updated to new schema
-    # invenio_data["custom_fields"]["dsmd"] = [INVENIO_DSMD_TEMPLATE]
+    invenio_data["custom_fields"]["dsmd"] = [form_data]
     # add generated keywords
     # add generated subjects
 

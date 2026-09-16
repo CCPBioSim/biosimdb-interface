@@ -39,14 +39,9 @@ def create_app(test_config=None):
 
     app.config["APPLICATION_BASE"] = os.getenv("APPLICATION_BASE", "")
 
-    # check secret key is not "dev" for prod
-    secret_key = os.getenv("SECRET_KEY", "dev")
-    if secret_key == "dev" and not app.debug:
-        raise RuntimeError("SECRET_KEY must be set to a secure value in production.")
-    app.config["SECRET_KEY"] = secret_key
-
     # App and Invenio OAuth2 configuration — values loaded from .env
     app.config.from_mapping(
+        SECRET_KEY=os.getenv("SECRET_KEY", "dev"),
         WORKFLOW_TTL_SECONDS=int(os.getenv("WORKFLOW_TTL_SECONDS", "14400")),
         UPLOAD_FOLDER=os.getenv("UPLOAD_FOLDER", "/tmp"),  # App specific
         CLIENT_ID=os.getenv("CLIENT_ID", ""),
@@ -66,6 +61,9 @@ def create_app(test_config=None):
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
+
+    if not app.config.get("TESTING") and app.config["SECRET_KEY"] == "dev":
+        raise RuntimeError("SECRET_KEY must be set to a secure value in production.")
 
     app.extensions["workflow_store"] = WorkflowStore(
         ttl_seconds=app.config["WORKFLOW_TTL_SECONDS"]

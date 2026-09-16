@@ -10,7 +10,7 @@ from flask import current_app, request, session
 from werkzeug.utils import secure_filename
 
 from .invenio import run_record_upload
-from .utils import fill_invenio_metadata, form_to_json
+from .utils import fill_invenio_metadata
 
 PENDING_FORM_FILENAME = "pending_form_data.json"
 PENDING_UPLOADS_FILENAME = "pending_uploads.json"
@@ -201,9 +201,6 @@ def _save_request_files(tmpdir):
     Returns:
         dict[str, list[str]]: Mapping of file role to saved file paths.
     """
-    # topo_path = session.get("topo_path")
-    # traj_files = session.get("traj_files") or []
-
     topo_path, traj_files = load_extracted_files(tmpdir)
 
     if _paths_are_reusable(tmpdir, topo_path, traj_files):
@@ -310,11 +307,10 @@ def save_pending_submission(json_form, tmpdir):
     with open(_pending_form_path(tmpdir), "w") as f:
         form_values = request.form.to_dict(flat=False)
         form_values.pop("workflow_id", None)
-
         json.dump(form_values, f)
 
 
-def prepare_for_invenio(form_data, tmpdir):
+def prepare_for_invenio(sim_metadata, tmpdir):
     """Create Invenio metadata and upload allowlisted files from tmpdir.
 
     Args:
@@ -329,9 +325,8 @@ def prepare_for_invenio(form_data, tmpdir):
     Deletes tmpdir on exit.
     """
     try:
-        json_form = form_to_json(form_data)
-        invenio_data = fill_invenio_metadata(json_form)
-        metadata_path = os.path.join(tmpdir, "metadata.json")
+        invenio_data = fill_invenio_metadata(sim_metadata)
+        metadata_path = os.path.join(tmpdir, "invenio_metadata.json")
         with open(metadata_path, "w") as f:
             json.dump(invenio_data, f, indent=2)
 

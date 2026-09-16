@@ -10,21 +10,6 @@ INVENIO_FORM_EMPTY = {
     "files": {"enabled": "true"},
     "custom_fields": {"dsmd": []},
     "metadata": {
-        "creators": [
-            {
-                "affiliations": [{"name": ""}],
-                "person_or_org": {
-                    "family_name": "",
-                    "given_name": "",
-                    "identifiers": [
-                        {
-                            "identifier": "",
-                        }
-                    ],
-                    "type": "personal",
-                },
-            }
-        ],
         "description": "",
         "identifiers": [
             {
@@ -33,10 +18,7 @@ INVENIO_FORM_EMPTY = {
         ],
         "publication_date": today.isoformat(),  # YYYY-MM-DD
         "publisher": "PSDI",
-        "resource_type": {
-            # "id": "dataset"
-            "id": "model"
-        },
+        "resource_type": {"id": "model"},
         "rights": [{"id": "cc-by-4.0"}],
         "subjects": [
             {"subject": "Biomolecular Simulation"},
@@ -45,33 +27,4 @@ INVENIO_FORM_EMPTY = {
         "title": "",
         "version": "v1",
     },
-}
-
-
-INVENIO_DSMD_TEMPLATE = {
-    "software": "",
-    "software_version": "",
-    "molecular_model": "",
-    "simulation_method": "",
-    "timestep": "",
-    "framestep": "",
-    "length": "",
-    "temperature": "",
-    "pressure": "",
-    "ensemble": "",
-    "box_type": "",
-    "trajectories": "",
-    "force_fields": "",
-    "experimental_structures": "",
-    "pH": "",
-    "membrane": "",
-    "ligands": "",
-    "sequences": "",
-    "average_energy": "",
-    "box_dimensions": "",
-    "long_range_cutoff": "",
-    "thermostat": "",
-    "barostat": "",
-    "atom_count": "",
-    "wall_time": "",
 }

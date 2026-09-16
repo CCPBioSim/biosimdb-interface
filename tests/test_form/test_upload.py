@@ -1,9 +1,13 @@
+import io
 import json
 import os
 import tempfile
 from unittest.mock import patch
 
+from flask import session
 from werkzeug.datastructures import ImmutableMultiDict
+
+from biosimdb_interface.form import upload
 
 
 def test_prepare_for_invenio(app):
@@ -81,7 +85,7 @@ def test_save_pending_submission(client, extracted_workflow):
 
 def test_do_submit_calls_invenio(client, workflow):
     """Submission uploads files from the specified workflow."""
-    with open(os.path.join(workflow.tmpdir, "pending_form_data.json"), "w") as f:
+    with open(os.path.join(workflow.tmpdir, "simulation_metadata.json"), "w") as f:
         json.dump({"simulation_name": ["test"]}, f)
 
     with client.session_transaction() as sess:
@@ -103,3 +107,145 @@ def test_do_submit_calls_invenio(client, workflow):
     assert b"Return to Webform" in response.data
     assert mock_invite.called
     assert mock_prepare.called
+
+
+def test_load_extracted_files_handles_empty_manifest(tmp_path):
+    """Missing roles return empty values."""
+    (tmp_path / "pending_uploads.json").write_text("{}")
+    assert upload.load_extracted_files(tmp_path) == (None, [])
+
+
+def test_verify_cached_file_meta_branches(tmp_path):
+    """Cached metadata detects missing and changed files."""
+    assert upload.verify_cached_file_meta(tmp_path) == (
+        False,
+        "Missing cached file metadata. Please extract metadata again.",
+    )
+
+    upload._save_pending_file_meta(
+        tmp_path,
+        [
+            {"file_role": "unknown"},
+            {"file_role": "topology", "file_name": "missing", "file_hash": "x"},
+        ],
+    )
+    assert upload.verify_cached_file_meta(tmp_path)[0] is False
+
+    path = tmp_path / "top.pdb"
+    path.write_text("topology")
+    upload._save_pending_file_meta(
+        tmp_path,
+        [{"file_role": "topology", "file_name": "top.pdb", "file_hash": "old"}],
+    )
+
+    with patch.object(upload, "file_metadata", return_value={"file_hash": "new"}):
+        assert upload.verify_cached_file_meta(tmp_path)[0] is False
+
+    with patch.object(upload, "file_metadata", return_value={"file_hash": "old"}):
+        assert upload.verify_cached_file_meta(tmp_path) == (True, None)
+
+
+def test_paths_are_reusable_validates_paths(tmp_path):
+    """Only existing paths inside the workflow are reusable."""
+    topology = tmp_path / "top.pdb"
+    trajectory = tmp_path / "traj.xtc"
+    topology.write_text("topology")
+    trajectory.write_text("trajectory")
+
+    assert not upload._paths_are_reusable(tmp_path, None, [str(trajectory)])
+    assert not upload._paths_are_reusable(tmp_path, str(topology), [])
+    assert not upload._paths_are_reusable(tmp_path, "missing", [str(trajectory)])
+    assert upload._paths_are_reusable(tmp_path, str(topology), [str(trajectory)])
+
+
+def test_save_request_files_uploads_and_normalizes_roles(app, tmp_path):
+    """Uploaded trajectory[] files are saved under trajectory."""
+    with app.test_request_context(
+        "/",
+        method="POST",
+        data={
+            "topology": (io.BytesIO(b"topology"), "top.pdb"),
+            "trajectory[]": (io.BytesIO(b"trajectory"), "traj.xtc"),
+        },
+        content_type="multipart/form-data",
+    ):
+        with patch.object(upload, "load_extracted_files", return_value=(None, [])):
+            files = upload._save_request_files(tmp_path)
+
+    assert files["topology"] == [str(tmp_path / "top.pdb")]
+    assert files["trajectory"] == [str(tmp_path / "traj.xtc")]
+
+
+def test_extract_uploaded_file_metadata_uses_cache(app, tmp_path):
+    """Cached metadata avoids reprocessing uploads."""
+    cached = [{"file_name": "top.pdb"}]
+    upload._save_pending_file_meta(tmp_path, cached)
+
+    with app.test_request_context("/"):
+        assert upload.extract_uploaded_file_metadata(tmp_path) == cached
+
+
+def test_extract_uploaded_file_metadata_resets_stream(app, tmp_path):
+    """Fresh metadata extraction rewinds uploaded streams."""
+    stream = io.BytesIO(b"data")
+    stream.read()
+
+    with app.test_request_context("/"):
+        with patch.object(
+            upload,
+            "_save_files_and_extract_metadata",
+            return_value=({}, [{"file_name": "top.pdb"}]),
+        ):
+            result = upload.extract_uploaded_file_metadata(tmp_path)
+
+    assert result == [{"file_name": "top.pdb"}]
+    assert stream.tell() == len(stream.getvalue())
+
+
+def test_data_collections_upload_passes_token_and_files(app):
+    """The upload helper forwards configured API arguments."""
+    with app.test_request_context("/"):
+        session["access_token"] = "token"
+
+        with patch.object(
+            upload,
+            "run_record_upload",
+            return_value=("repo", "draft"),
+        ) as run_upload:
+            result = upload._data_collections_upload("metadata.json", ["top.pdb"])
+
+    assert result == ("repo", "draft")
+    assert run_upload.call_args.kwargs["api_key"] == "token"
+    assert run_upload.call_args.kwargs["files"] == ["top.pdb"]
+
+
+def test_save_pending_submission_writes_files_and_form(app, tmp_path):
+    """Validated metadata and form values are persisted."""
+    with app.test_request_context(
+        "/",
+        method="POST",
+        data={"workflow_id": "workflow", "name": "test"},
+    ):
+        upload.save_pending_submission({"engine": "GROMACS"}, tmp_path)
+
+    metadata = json.loads((tmp_path / "simulation_metadata.json").read_text())
+    form = json.loads((tmp_path / "pending_form_data.json").read_text())
+
+    assert metadata["files"] == []
+    assert form == {"name": ["test"]}
+
+
+def test_submission_cancellation_flag(tmp_path):
+    """Cancellation flags are written and detected."""
+    workflow = tmp_path / "workflow"
+
+    assert not upload.is_submission_cancelled(workflow)
+
+    upload.mark_submission_cancelled(workflow)
+    assert not upload.is_submission_cancelled(workflow)
+
+    workflow.mkdir()
+    upload.mark_submission_cancelled(workflow)
+
+    assert upload.is_submission_cancelled(workflow)
+    assert not upload.is_submission_cancelled(None)

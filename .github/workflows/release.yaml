@@ -64,12 +64,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Change version in repo (init and schema) and CITATION.cff
+      - name: Change version in repo (init) and CITATION.cff
         run: |
           VERSION="${{ github.event.inputs.version }}"
 
           # Update Python package version
-          sed -i "s/^__version__ = .*/__version__ = \"${VERSION}\"/g" biosim_schema/__init__.py
+          sed -i "s/^__version__ = .*/__version__ = \"${VERSION}\"/g" biosimdb_interface/__init__.py
 
           # Keep Sphinx release metadata in sync
           sed -i -E "s/^(release = ).*/\1'${VERSION}'/" docs/source/conf.py

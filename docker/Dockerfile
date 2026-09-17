@@ -42,9 +42,11 @@ COPY pyproject.toml README.md LICENSE ./
 COPY biosimdb_interface/ biosimdb_interface/
 
 # Install application and its dependencies into the venv
-RUN pip install --upgrade pip setuptools && \
-    pip install --no-cache-dir gunicorn .
-
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir \
+    setuptools==84.0.0 \
+    gunicorn==26.2.0
+    pip install --no-cache-dir .
 
 # Stage 3: Runtime
 FROM ubuntu:24.04

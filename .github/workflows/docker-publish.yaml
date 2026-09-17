@@ -26,11 +26,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
-      - name: Fetch external versions and build date
+      - name: Fetch interface, schema and extractor versions and build date
         id: vars
         shell: bash
         run: |
           echo "date=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "interface=$(gh release view --repo CCPBioSim/biosimdb-interface --json tagName --template '{{.tagName}}')" >> $GITHUB_OUTPUT
           echo "schema=$(gh release view --repo CCPBioSim/biosim-schema --json tagName --template '{{.tagName}}')" >> $GITHUB_OUTPUT
           echo "extractor=$(gh release view --repo CCPBioSim/biosim-extractor --json tagName --template '{{.tagName}}')" >> $GITHUB_OUTPUT
         env:
@@ -50,10 +51,11 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-            type=raw,value=${{ steps.vars.outputs.date }}-schema-${{ steps.vars.outputs.schema }}-extractor-${{ steps.vars.outputs.extractor }}
+            type=raw,value=${{ steps.vars.outputs.date }}-interface-${{ steps.vars.outputs.interface }}-schema-${{ steps.vars.outputs.schema }}-extractor-${{ steps.vars.outputs.extractor }}
             type=ref,event=branch,enable=${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
           labels: |
             org.opencontainers.image.created=${{ steps.vars.outputs.date }}
+            biosim.interface.version=${{ steps.vars.outputs.interface }}
             biosim.schema.version=${{ steps.vars.outputs.schema }}
             biosim.extractor.version=${{ steps.vars.outputs.extractor }}
 

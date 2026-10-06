@@ -41,7 +41,7 @@ dependencies = [
     "MDAnalysis==2.10.0",
     "python-dotenv==1.2.4",
     "gunicorn>=26,<27",
-    "biosim-extractor>=1.0.1,<1.1"
+    "biosim-extractor>=1.0.1,<2.0"
 ]
 
 [project.urls]

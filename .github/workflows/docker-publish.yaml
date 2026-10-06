@@ -1,9 +1,11 @@
-name: Publish Docker image to GHCR
+name: Publish Docker image Weekly to GHCR
 
 on:
   repository_dispatch:
     types: [build]
   workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1'
 
 env:
   REGISTRY: ghcr.io

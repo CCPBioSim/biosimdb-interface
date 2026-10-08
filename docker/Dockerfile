@@ -43,10 +43,8 @@ COPY biosimdb_interface/ biosimdb_interface/
 
 # Install application and its dependencies into the venv
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir \
-    setuptools==84.0.0 \
-    gunicorn==26.2.0
-    pip install --no-cache-dir .
+RUN pip install --no-cache-dir setuptools==84.0.0 gunicorn==26.2.0
+RUN pip install --no-cache-dir .
 
 # Stage 3: Runtime
 FROM ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
@@ -94,4 +92,4 @@ ENV PORT=${PORT} \
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT 'biosimdb_interface:create_app()'"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT --worker-class gthread --workers 2 --threads 4 --timeout 900 'biosimdb_interface:create_app()'"]

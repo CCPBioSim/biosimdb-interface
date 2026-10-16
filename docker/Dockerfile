@@ -92,4 +92,4 @@ ENV PORT=${PORT} \
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT --worker-class gthread --workers 2 --threads 4 --timeout 900 'biosimdb_interface:create_app()'"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT --timeout 0 'biosimdb_interface:create_app()'"]

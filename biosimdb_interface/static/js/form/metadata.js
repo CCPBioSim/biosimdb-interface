@@ -445,6 +445,9 @@ function requireExtraction(form) {
  */
 function validateAndSubmit(form, onSuccess) {
     const formData = addWorkflowId(new FormData(form));
+    // Files were already stored server-side by extraction; don't re-upload them.
+    formData.delete('topology');
+    formData.delete('trajectory[]');
     formData.append('save', '1');
     return fetch(window.APPLICATION_BASE + '/webform', { method: 'POST', body: formData })
         .then(r => r.json())

@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import threading
 import time
 import uuid
 from dataclasses import dataclass, field
 
-from .utils import make_upload_tmpdir
+from flask import current_app
 
 
 class WorkflowNotFound(Exception):
@@ -42,19 +43,24 @@ class WorkflowStore:
         except (ValueError, TypeError, AttributeError) as exc:
             raise WorkflowNotFound("Invalid upload session.") from exc
 
+    @staticmethod
+    def _dir_for(workflow_id: str) -> str:
+        """Deterministic directory so every gunicorn worker finds the same files."""
+        root = current_app.config["UPLOAD_FOLDER"]
+        os.makedirs(root, exist_ok=True)
+        return os.path.join(root, f"biosimdb_submission_{workflow_id}")
+
     def reset(self, workflow_id: str) -> Workflow:
         """Delete only this workflow's old directory and create a new one."""
         workflow_id = self._validate_id(workflow_id)
 
         with self._lock:
-            old = self._workflows.pop(workflow_id, None)
-            if old:
-                shutil.rmtree(old.tmpdir, ignore_errors=True)
+            self._workflows.pop(workflow_id, None)
+            tmpdir = self._dir_for(workflow_id)
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            os.makedirs(tmpdir)
 
-            workflow = Workflow(
-                workflow_id=workflow_id,
-                tmpdir=make_upload_tmpdir("biosimdb_submission_"),
-            )
+            workflow = Workflow(workflow_id=workflow_id, tmpdir=tmpdir)
             self._workflows[workflow_id] = workflow
             return workflow
 
@@ -64,6 +70,18 @@ class WorkflowStore:
 
         with self._lock:
             workflow = self._workflows.get(workflow_id)
+            if not workflow:
+                # Created by another worker process: recover from disk.
+                tmpdir = self._dir_for(workflow_id)
+                if os.path.isdir(tmpdir):
+                    mtime = os.path.getmtime(tmpdir)
+                    workflow = Workflow(
+                        workflow_id=workflow_id,
+                        tmpdir=tmpdir,
+                        created_at=mtime,
+                        updated_at=mtime,
+                    )
+                    self._workflows[workflow_id] = workflow
             if not workflow:
                 raise WorkflowNotFound(
                     "This upload session no longer exists. Please extract again."
@@ -76,6 +94,10 @@ class WorkflowStore:
                 )
 
             workflow.updated_at = time.time()
+            try:
+                os.utime(workflow.tmpdir)  # share activity with other workers
+            except OSError:
+                pass
             return workflow
 
     def delete(self, workflow_id: str | None) -> None:

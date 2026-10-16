@@ -1,6 +1,7 @@
-shortdesc: ""
-longdesc: ""
+shortdesc: "A web interface for extracting and uploading simulation metadata"
+longdesc: "A platform for extracting and uploading simulation data via a web interface to the PSDI hosted BioSimDB community data-collection."
 category: "data-tools"
-image: ""
-pypi: true
-conda: true
+image: "biosimdb-interface-logo.svg"
+pypi: false
+conda: false
+ghcr: true

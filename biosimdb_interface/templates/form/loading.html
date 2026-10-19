@@ -26,9 +26,16 @@
         method: "POST",
         signal: controller.signal,
     })
-    .then(response => {
+    .then(async response => {
         if (cancelled) return;
-        window.location.replace(response.url);
+        // fetch has already followed the redirect and rendered the target page,
+        // consuming any flashed messages. Show that response instead of
+        // re-requesting the URL, otherwise the flash message is lost.
+        const html = await response.text();
+        history.replaceState(null, "", response.url);
+        document.open();
+        document.write(html);
+        document.close();
     })
     .catch(err => {
         if (err.name === 'AbortError') return; // handled by cancel button

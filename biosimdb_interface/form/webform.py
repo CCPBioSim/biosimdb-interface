@@ -270,6 +270,18 @@ def do_submit():
         flash("Upload failed unexpectedly. Please try again.", "danger")
         return redirect(url_for("form.webform"))
 
+    except requests.exceptions.JSONDecodeError:
+        current_app.logger.exception("Invenio returned a non-JSON response")
+        current_app.extensions["workflow_store"].delete(
+            request.values.get("workflow_id")
+        )
+        flash(
+            "Upload failed: the repository returned an unexpected response. "
+            "The file may be too large for the server to accept.",
+            "danger",
+        )
+        return redirect(url_for("form.webform"))
+
     # success: now clear submission data and logout user.
     current_app.extensions["workflow_store"].delete(request.values.get("workflow_id"))
     session.pop("access_token", None)

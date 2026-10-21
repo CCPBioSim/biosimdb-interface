@@ -3,6 +3,7 @@ import os
 from unittest.mock import Mock, patch
 
 import requests
+from biosim_extractor.metadata.validatemetadata import MetadataValidationError
 
 from biosimdb_interface.form.workflows import WorkflowNotFound
 
@@ -165,7 +166,7 @@ def test_webform_metadata_invalid(client, extracted_workflow):
         ),
         patch(
             "biosimdb_interface.form.webform.validate_metadata",
-            side_effect=ValueError("bad metadata"),
+            side_effect=MetadataValidationError(["bad metadata"]),
         ),
     ):
         response = client.post(

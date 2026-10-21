@@ -11,6 +11,15 @@ from biosimdb_interface.schema.invenio import INVENIO_FORM_EMPTY
 from biosimdb_interface.schema.webform import get_simulation_metadata
 
 
+class FormConversionError(ValueError):
+    """Raised when form values can't be parsed; holds every message in ``errors``."""
+
+    def __init__(self, errors, heading="Form conversion failed:"):
+        self.errors = list(errors)
+        self.heading = heading
+        super().__init__(heading + "\n" + "\n".join(self.errors))
+
+
 def make_upload_tmpdir(prefix):
     upload_root = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_root, exist_ok=True)
@@ -100,6 +109,25 @@ def _get_typehint_map():
     return result
 
 
+def _parse_vector(raw, field):
+    """Parse '1, 2, 3' to a flat list, or '1,2; 3,4' to a list of rows."""
+    rows = [r for r in re.split(r"[;\n]", raw) if r.strip()]
+    parsed = []
+    for i, row in enumerate(rows, start=1):
+        try:
+            parsed.append([float(x) for x in row.split(",") if x.strip()])
+        except ValueError:
+            raise ValueError(
+                f"{field}: row {i} {row.strip()!r} is not a comma-separated list of numbers"
+            ) from None
+    if len(rows) <= 1:
+        return parsed[0] if parsed else []
+    lengths = {len(r) for r in parsed}
+    if len(lengths) > 1:
+        raise ValueError(f"{field}: rows have different lengths {sorted(lengths)}")
+    return parsed
+
+
 def form_to_json(form):
     """Convert flat HTML form data into a nested dictionary.
 
@@ -115,6 +143,7 @@ def form_to_json(form):
     """
     typehint_map = _get_typehint_map()
     data = {}
+    errors = []
     # Use lists() so repeated keys (e.g. multiselect name="x[]") are preserved.
     if hasattr(form, "lists"):
         key_values_iter = form.lists()
@@ -136,7 +165,11 @@ def form_to_json(form):
         if parts[-1] == "vector_value":
             raw = values[0] if values else ""
             if isinstance(raw, str) and raw:
-                value = [float(x.strip()) for x in raw.split(",") if x.strip()]
+                try:
+                    value = _parse_vector(raw, ".".join(parts))
+                except ValueError as exc:
+                    errors.append(str(exc))
+                    continue
             else:
                 value = raw
             _set_nested(data, parts, value)
@@ -153,12 +186,16 @@ def form_to_json(form):
                     try:
                         value = int(value)
                     except (ValueError, TypeError):
-                        pass
+                        errors.append(
+                            f"{'.'.join(parts)}: {value!r} is not a valid {typehint}"
+                        )
                 elif typehint == "float":
                     try:
                         value = float(value)
                     except (ValueError, TypeError):
-                        pass
+                        errors.append(
+                            f"{'.'.join(parts)}: {value!r} is not a valid {typehint}"
+                        )
                 elif typehint == "boolean":
                     value = bool(value)
             converted_values.append(value)
@@ -171,6 +208,8 @@ def form_to_json(form):
                 value_out = converted_values[0] if converted_values else ""
 
         _set_nested(data, parts, value_out)
+    if errors:
+        raise FormConversionError(errors)
     return data
 
 

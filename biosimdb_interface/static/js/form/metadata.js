@@ -44,10 +44,17 @@ document.addEventListener('click', function(e) {
             method: 'POST',
             body: formData
         })
-        .then(r => r.json())
+        .then(async r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) {
+                throw new Error(`Unexpected server response (${r.status}).`);
+            }
+            return r.json();
+        })
         .then(data => {
             if (data.error) {
-                alert(data.error);
+                // error in metadata extraction occurred
+                showAlert(`<strong>${escapeHtml(data.error)}</strong>`, 'danger', 5000);
             } else if (data.simulation_metadata) {
                 try {
                     populateFields(data.simulation_metadata);
@@ -389,6 +396,23 @@ document.addEventListener('change', function(e) {
 });
 
 /**
+ * Fade out and remove an existing Bootstrap alert after a delay.
+ *
+ * @param {HTMLElement} alertEl - Rendered Bootstrap alert element.
+ * @param {number} timeout - Delay in milliseconds.
+ */
+function dismissAlertAfter(alertEl, timeout = 5000) {
+    setTimeout(() => {
+        alertEl.classList.remove('show');
+        setTimeout(() => alertEl.remove(), 150);
+    }, timeout);
+}
+
+document.querySelectorAll('.alert').forEach((alertEl) => {
+    dismissAlertAfter(alertEl, 10000);
+});
+
+/**
  * Shows a dismissible Bootstrap alert fixed at the top of the page.
  * @param {string} html - HTML content for the alert body.
  * @param {string} [type='warning'] - Bootstrap alert variant (e.g. 'warning', 'danger', 'success').
@@ -400,12 +424,7 @@ function showAlert(html, type = 'warning', timeout = 50000) {
     alertEl.style.cssText = 'position:fixed; top:1rem; left:50%; transform:translateX(-50%); z-index:1055; min-width:400px; max-width:700px; box-shadow:0 2px 8px rgba(0,0,0,.15);';
     alertEl.innerHTML = `${html}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
     document.body.appendChild(alertEl);
-    if (timeout) {
-        setTimeout(() => {
-            alertEl.classList.remove('show');
-            setTimeout(() => alertEl.remove(), 150);
-        }, timeout);
-    }
+    if (timeout) dismissAlertAfter(alertEl, timeout);
 }
 
 function escapeHtml(s) {
@@ -546,23 +565,6 @@ function highlightValidationFields(validationErrors) {
 }
 
 /**
- * Fade out and remove an existing Bootstrap alert after a delay.
- *
- * @param {HTMLElement} alertEl - Rendered Bootstrap alert element.
- * @param {number} timeout - Delay in milliseconds.
- */
-function dismissAlertAfter(alertEl, timeout = 5000) {
-    setTimeout(() => {
-        alertEl.classList.remove('show');
-        setTimeout(() => alertEl.remove(), 150);
-    }, timeout);
-}
-
-document.querySelectorAll('.alert').forEach((alertEl) => {
-    dismissAlertAfter(alertEl, 5000);
-});
-
-/**
  * Guards save/submit actions by checking that metadata has been extracted.
  * Uses native browser validation UI (`reportValidity`) to surface the error on the topology input.
  * @param {HTMLFormElement} form - The simulation form element.
@@ -592,7 +594,13 @@ function validateAndSubmit(form, onSuccess) {
     formData.delete('trajectory[]');
     formData.append('save', '1');
     return fetch(window.APPLICATION_BASE + '/webform', { method: 'POST', body: formData })
-        .then(r => r.json())
+        .then(async r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) {
+                throw new Error(`Unexpected server response (${r.status}).`);
+            }
+            return r.json();
+        })
         .then(data => {
             if (data.validation_errors && data.validation_errors.length > 0) {
                 highlightValidationFields(data.validation_errors);

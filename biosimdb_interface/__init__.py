@@ -37,8 +37,11 @@ def create_app(test_config=None):
         instance_relative_config=True,
     )  # create flask instance
 
-    app.config["APPLICATION_BASE"] = os.getenv("APPLICATION_BASE", "")
-
+    app.config["APPLICATION_BASE"] = APPLICATION_BASE
+    app.config["BIOSIM_SCHEMA_PATH"] = os.getenv("BIOSIM_SCHEMA_PATH", "")
+    app.config["ENGINE_MAPPING_SCHEMA_PATH"] = os.getenv(
+        "ENGINE_MAPPING_SCHEMA_PATH", ""
+    )
     # App and Invenio OAuth2 configuration — values loaded from .env
     app.config.from_mapping(
         SECRET_KEY=os.getenv("SECRET_KEY", "dev"),
@@ -46,6 +49,7 @@ def create_app(test_config=None):
         UPLOAD_FOLDER=os.getenv("UPLOAD_FOLDER", "/tmp"),  # App specific
         CLIENT_ID=os.getenv("CLIENT_ID", ""),
         CLIENT_SECRET=os.getenv("CLIENT_SECRET", ""),
+        BIOSIMDB_SERVICE_TOKEN=os.getenv("BIOSIMDB_SERVICE_TOKEN", ""),
         AUTH_URL=os.getenv("AUTH_URL", ""),
         TOKEN_URL=os.getenv("TOKEN_URL", ""),
         BASE_URL=os.getenv("BASE_URL", ""),

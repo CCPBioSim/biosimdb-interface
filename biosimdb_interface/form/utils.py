@@ -7,17 +7,9 @@ import tempfile
 
 from flask import current_app
 
+from biosimdb_interface.form.errors import FormConversionError
 from biosimdb_interface.schema.invenio import INVENIO_FORM_EMPTY
 from biosimdb_interface.schema.webform import get_simulation_metadata
-
-
-class FormConversionError(ValueError):
-    """Raised when form values can't be parsed; holds every message in ``errors``."""
-
-    def __init__(self, errors, heading="Form conversion failed:"):
-        self.errors = list(errors)
-        self.heading = heading
-        super().__init__(heading + "\n" + "\n".join(self.errors))
 
 
 def make_upload_tmpdir(prefix):

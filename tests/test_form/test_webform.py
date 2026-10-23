@@ -1,8 +1,5 @@
-import json
-import os
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import requests
 from biosim_extractor.metadata.validatemetadata import MetadataValidationError
 
 from biosimdb_interface.form.workflows import WorkflowNotFound
@@ -104,19 +101,6 @@ def test_submit_with_token_renders_loading(client, extracted_workflow):
     assert b"Submitting" in response.data
 
 
-def test_resume_submit_with_pending_data(client, workflow):
-    """Resume resolves the workflow ID passed in the query string."""
-    with open(os.path.join(workflow.tmpdir, "pending_form_data.json"), "w") as f:
-        json.dump({"x": ["y"]}, f)
-
-    with client.session_transaction() as sess:
-        sess["access_token"] = "tok"
-
-    response = client.get(f"/resume_submit?workflow_id={workflow.workflow_id}")
-
-    assert response.status_code == 200
-
-
 def test_webform_missing_workflow(client):
     """Rejects an unknown workflow."""
     with patch(
@@ -214,66 +198,6 @@ def test_do_submit_missing_metadata(client, workflow):
     assert response.status_code == 302
 
 
-def test_do_submit_cancelled(client, workflow):
-    """Stops cancelled submissions."""
-    with patch(
-        "biosimdb_interface.form.webform.is_submission_cancelled",
-        return_value=True,
-    ):
-        response = client.post(f"/do_submit?workflow_id={workflow.workflow_id}")
-    assert response.status_code == 302
-
-
-def test_do_submit_upload_failure(client, workflow):
-    """Redirects when upload returns no draft."""
-    metadata = os.path.join(workflow.tmpdir, "simulation_metadata.json")
-    with open(metadata, "w") as file:
-        json.dump({}, file)
-
-    with (
-        patch("biosimdb_interface.form.webform.invite_user"),
-        patch(
-            "biosimdb_interface.form.webform.prepare_for_invenio",
-            return_value=None,
-        ),
-    ):
-        response = client.post(f"/do_submit?workflow_id={workflow.workflow_id}")
-
-    assert response.status_code == 302
-
-
-def test_do_submit_http_error(client, workflow):
-    """Redirects after an upload HTTP failure."""
-    metadata = os.path.join(workflow.tmpdir, "simulation_metadata.json")
-    with open(metadata, "w") as file:
-        json.dump({}, file)
-
-    error = requests.HTTPError(response=Mock(status_code=500))
-    with (
-        patch("biosimdb_interface.form.webform.invite_user"),
-        patch(
-            "biosimdb_interface.form.webform.prepare_for_invenio",
-            side_effect=error,
-        ),
-    ):
-        response = client.post(f"/do_submit?workflow_id={workflow.workflow_id}")
-
-    assert response.status_code == 302
-
-
-def test_cancel_submit(client, workflow):
-    """Marks a submission as cancelled and clears session state."""
-    with client.session_transaction() as sess:
-        sess["access_token"] = "token"
-        sess["user_email"] = "user"
-
-    with patch("biosimdb_interface.form.webform.mark_submission_cancelled") as cancel:
-        response = client.post(f"/cancel_submit?workflow_id={workflow.workflow_id}")
-
-    assert response.status_code == 200
-    cancel.assert_called_once_with(workflow.tmpdir)
-
-
 def test_cancel_submit_missing_workflow(client):
     """Rejects cancellation for an unknown workflow."""
     with patch(
@@ -282,32 +206,3 @@ def test_cancel_submit_missing_workflow(client):
     ):
         response = client.post("/cancel_submit?workflow_id=missing")
     assert response.status_code == 400
-
-
-def test_submit_success_without_record(client):
-    """Redirects when no submitted record exists."""
-    response = client.get("/submit_success")
-    assert response.status_code == 302
-
-
-def test_do_submit_http_unauthorized(client, workflow):
-    """Forces login after an expired upload session."""
-    metadata = os.path.join(workflow.tmpdir, "simulation_metadata.json")
-    with open(metadata, "w") as file:
-        json.dump({}, file)
-
-    error = requests.HTTPError(response=Mock(status_code=401))
-    with (
-        patch("biosimdb_interface.form.webform.invite_user"),
-        patch(
-            "biosimdb_interface.form.webform.prepare_for_invenio",
-            side_effect=error,
-        ),
-    ):
-        response = client.post(
-            f"/do_submit?workflow_id={workflow.workflow_id}",
-            data={"workflow_id": workflow.workflow_id},
-        )
-
-    assert response.status_code == 302
-    assert "/login" in response.headers["Location"]

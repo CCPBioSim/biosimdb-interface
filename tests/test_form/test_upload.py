@@ -92,8 +92,8 @@ def test_do_submit_calls_invenio(client, workflow):
         sess["access_token"] = "fake-token"
 
     with (
-        patch("biosimdb_interface.form.webform.invite_user") as mock_invite,
-        patch("biosimdb_interface.form.webform.prepare_for_invenio") as mock_prepare,
+        patch("biosimdb_interface.form.submission.invite_user") as mock_invite,
+        patch("biosimdb_interface.form.submission.prepare_for_invenio") as mock_prepare,
     ):
         mock_prepare.return_value = "draft-123"
 

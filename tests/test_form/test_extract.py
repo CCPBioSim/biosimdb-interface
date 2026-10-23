@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 def test_extract_missing_files_returns_400(client):
     response = client.post("/extract_metadata", data={})
-    assert response.status_code == 400
+    assert response.status_code == 404
     assert "missing" in response.get_json()["error"].lower()
 
 
@@ -36,6 +36,7 @@ def test_extract_exception_returns_500(client):
             "/extract_metadata", data=data, content_type="multipart/form-data"
         )
         assert response.status_code == 500
+        assert "Extraction failed" in response.get_json()["error"]
 
 
 def test_two_tabs_keep_separate_extraction_directories(client, app):

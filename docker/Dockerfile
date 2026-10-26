@@ -43,7 +43,7 @@ COPY biosimdb_interface/ biosimdb_interface/
 
 # Install application and its dependencies into the venv
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir setuptools==84.2.0 gunicorn==26.2.0
+RUN pip install --no-cache-dir setuptools==84.2.1 gunicorn==26.2.0
 RUN pip install --no-cache-dir .
 
 # Stage 3: Runtime

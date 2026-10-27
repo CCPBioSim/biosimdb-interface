@@ -99,6 +99,7 @@ def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
             f"\nUpload FAILED at {time.strftime('%H:%M:%S %Z')}: {e!r}\n"
             f"  sent {progress.status()}\n  {where}"
         )
+        raise
     current_app.logger.info(
         f"Server responded HTTP {r.status_code}, {progress.wait_time()} after the last byte was sent"
     )
@@ -191,10 +192,12 @@ def upload_multipart(
     links = next(e["links"] for e in r.json()["entries"] if e["key"] == key)
     part_links = links.get("parts")
     if not part_links or len(part_links) != parts:
-        current_app.logger.error(
+        message = (
             f"Multipart init returned {len(part_links or [])} part links, "
-            f"expected {parts}:\n{links}"
+            f"expected {parts}: {links}"
         )
+        current_app.logger.error(message)
+        raise RuntimeError(message)
 
     progress = Progress(size)
     current_app.logger.debug(
@@ -230,6 +233,10 @@ def upload_multipart(
             log.error(
                 f"\nUpload FAILED at {time.strftime('%H:%M:%S %Z')}: {e}\n"
                 f"  sent {progress.status()}"
+            )
+            raise RuntimeError(
+                f"Multipart init returned {len(part_links or [])} part links, "
+                f"expected {parts}"
             )
     current_app.logger.debug(f"All {parts} parts uploaded")
     return links["commit"]

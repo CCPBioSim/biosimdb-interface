@@ -1,9 +1,239 @@
 from unittest.mock import MagicMock
 
 import pytest
+import requests
 
 from biosimdb_interface.core.cancellation import MultipartTooSlow, UploadCancelled
 from biosimdb_interface.invenio import multipart
+
+
+def test_upload_single_sends_content_and_returns_commit_url(app, tmp_path):
+    """Uploads a file in one PUT and returns its commit URL."""
+    path = tmp_path / "topol.gro"
+    path.write_bytes(b"topology")
+    session = MagicMock()
+    session.post.return_value = make_response(
+        201,
+        payload={
+            "entries": [
+                {
+                    "key": path.name,
+                    "links": {
+                        "content": "https://example.org/content",
+                        "commit": "https://example.org/commit",
+                    },
+                }
+            ]
+        },
+    )
+    session.put.return_value = make_response(200)
+
+    with app.app_context():
+        result = multipart.upload_single(
+            session,
+            "https://example.org",
+            "draft-1",
+            path,
+            path.name,
+            path.stat().st_size,
+        )
+
+    assert result == "https://example.org/commit"
+    session.put.assert_called_once()
+    assert session.put.call_args.kwargs["headers"] == {
+        "Content-Type": "application/octet-stream"
+    }
+
+
+def test_upload_single_propagates_cancellation(app, tmp_path):
+    """Propagates cancellation raised during the content PUT."""
+    path = tmp_path / "topol.gro"
+    path.write_bytes(b"topology")
+    session = MagicMock()
+    session.post.return_value = make_response(
+        201,
+        payload={
+            "entries": [
+                {
+                    "key": path.name,
+                    "links": {"content": "https://example.org/content"},
+                }
+            ]
+        },
+    )
+    session.put.side_effect = UploadCancelled
+
+    with app.app_context(), pytest.raises(UploadCancelled):
+        multipart.upload_single(
+            session,
+            "https://example.org",
+            "draft-1",
+            path,
+            path.name,
+            path.stat().st_size,
+        )
+
+
+def test_upload_single_propagates_request_failure(app, tmp_path):
+    """Propagates a network failure during the content PUT."""
+    path = tmp_path / "topol.gro"
+    path.write_bytes(b"topology")
+    session = MagicMock()
+    session.post.return_value = make_response(
+        201,
+        payload={
+            "entries": [
+                {
+                    "key": path.name,
+                    "links": {"content": "https://example.org/content"},
+                }
+            ]
+        },
+    )
+    session.put.side_effect = requests.ConnectionError("connection lost")
+
+    with app.app_context(), pytest.raises(requests.RequestException):
+        multipart.upload_single(
+            session,
+            "https://example.org",
+            "draft-1",
+            path,
+            path.name,
+            path.stat().st_size,
+        )
+
+
+def test_put_part_retries_request_exception(tmp_path, monkeypatch):
+    """Retries a request exception and succeeds on a later attempt."""
+    path = tmp_path / "part.bin"
+    path.write_bytes(b"payload")
+    s3 = MagicMock()
+    s3.put.side_effect = [
+        requests.ConnectionError("temporary failure"),
+        make_response(200),
+    ]
+    monkeypatch.setattr(multipart.time, "sleep", lambda _: None)
+
+    progress = multipart.Progress(path.stat().st_size)
+    multipart.put_part(
+        s3,
+        path,
+        1,
+        "https://storage/part-1",
+        part_size=10,
+        size=path.stat().st_size,
+        progress=progress,
+        cancelled=lambda: False,
+    )
+
+    assert s3.put.call_count == 2
+    assert progress.sent == path.stat().st_size
+
+
+def test_put_part_raises_after_all_attempts_fail(tmp_path, monkeypatch):
+    """Raises after exhausting retries for a part."""
+    path = tmp_path / "part.bin"
+    path.write_bytes(b"payload")
+    s3 = MagicMock()
+    s3.put.return_value = make_response(500, "storage error")
+    monkeypatch.setattr(multipart.time, "sleep", lambda _: None)
+
+    with pytest.raises(RuntimeError, match="failed after"):
+        multipart.put_part(
+            s3,
+            path,
+            1,
+            "https://storage/part-1",
+            part_size=10,
+            size=path.stat().st_size,
+            progress=multipart.Progress(path.stat().st_size),
+            cancelled=lambda: False,
+        )
+
+
+def test_upload_multipart_rejects_missing_part_links(app, tmp_path):
+    """Rejects initialization responses that omit the expected part links."""
+    path = tmp_path / "traj.xtc"
+    path.write_bytes(b"trajectory")
+    session = MagicMock()
+    session.post.return_value = make_response(
+        201,
+        payload={
+            "entries": [
+                {
+                    "key": path.name,
+                    "links": {"parts": [], "commit": "https://example.org/commit"},
+                }
+            ]
+        },
+    )
+
+    with app.app_context(), pytest.raises(RuntimeError, match="part links"):
+        multipart.upload_multipart(
+            session,
+            "https://example.org",
+            "draft-1",
+            path,
+            path.name,
+            path.stat().st_size,
+            chunk_mb=1,
+            workers=1,
+        )
+
+
+def test_upload_file_stop_callback_cancels(app, monkeypatch, tmp_path):
+    """Stops a small-file multipart attempt when cancellation is requested."""
+    path = tmp_path / "small.bin"
+
+    def multipart_attempt(*args):
+        cancelled = args[-1]
+        cancelled()
+
+    monkeypatch.setattr(multipart, "upload_multipart", multipart_attempt)
+
+    with app.app_context(), pytest.raises(UploadCancelled):
+        multipart.upload_file(
+            MagicMock(),
+            "https://example.org",
+            "draft-1",
+            path,
+            path.name,
+            100,
+            chunk_mb=1,
+            cancelled=lambda: True,
+        )
+
+
+def test_upload_file_stop_callback_enforces_deadline(app, monkeypatch, tmp_path):
+    """Falls back to a single PUT when the multipart deadline expires."""
+    path = tmp_path / "small.bin"
+    session = MagicMock()
+    single_upload = MagicMock(return_value="single-commit")
+    monkeypatch.setattr(multipart, "upload_single", single_upload)
+    monkeypatch.setattr(
+        multipart.time, "monotonic", iter([0, multipart.SLOW_AFTER + 1]).__next__
+    )
+
+    def multipart_attempt(*args):
+        cancelled = args[-1]
+        cancelled()
+
+    monkeypatch.setattr(multipart, "upload_multipart", multipart_attempt)
+
+    with app.app_context():
+        result = multipart.upload_file(
+            session,
+            "https://example.org",
+            "draft-1",
+            path,
+            "folder/file.bin",
+            100,
+            chunk_mb=1,
+        )
+
+    assert result == "single-commit"
+    session.delete.assert_called_once()
+    single_upload.assert_called_once()
 
 
 def make_response(status_code=200, text="ok", payload=None):

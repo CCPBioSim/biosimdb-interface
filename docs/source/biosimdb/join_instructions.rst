@@ -1,9 +1,9 @@
 .. include:: ../.special.rst
 
-1. Join the BioSimDB Community
-==============================
+1. PSDI data-collections
+========================
 
-To upload data to `BioSimDB <https://data-collections.psdi.ac.uk/communities/biosimdb/>`_, users must first join the BioSimDB community hosted by `PSDI <https://www.psdi.ac.uk/>`_ , by following the steps below.
+To upload data to `BioSimDB <https://data-collections.psdi.ac.uk/communities/biosimdb/>`_, users must first log into to the data-collections hosted by `PSDI <https://www.psdi.ac.uk/>`_ , by following the steps below.
 
 a). PSDI Data Collection Login
 ------------------------------
@@ -17,7 +17,7 @@ Head to the `PSDI data collections website <https://data-collections.psdi.ac.uk/
 b). Account Creation
 --------------------
 
-There are two routes for creating a PSDI account, we strongly advise to use route (i). to avoid delays in creating your account. Where this is not possible, please follow option (ii).
+There are two routes for creating a PSDI account, **we strongly advise to use route (i). to avoid delays in creating your account**. Where this is not possible, please follow option (ii).
 
 b) (i). :sso:`SSO via Institution`
 ++++++++++++++++++++++++++++++++++

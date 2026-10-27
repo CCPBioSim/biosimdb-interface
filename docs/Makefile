@@ -18,3 +18,11 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+.PHONY: api-docs html
+
+api-docs:
+	$(SPHINXAPIDOC) --force -o "$(SOURCEDIR)/api_generated" ../biosimdb_interface
+
+html: api-docs
+	$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

@@ -3,15 +3,12 @@
 Simulation files metadata extraction endpoint.
 """
 
-import os
-
 from flask import current_app, jsonify, request
-from werkzeug.utils import secure_filename
 
 from biosimdb_interface.core.errors import WebformError
 
 from ..core.workflows import WorkflowNotFound
-from ..uploads.to_server import cache_extracted_files
+from ..uploads.to_server import cache_extracted_files, upload_files_to_server
 from . import extract_bp
 from .services import extract_files_validate
 
@@ -43,19 +40,12 @@ def extract_metadata():
 
     tmpdir = workflow.tmpdir
 
-    topo_path = os.path.join(tmpdir, secure_filename(topology.filename))
-    topology.save(topo_path, buffer_size=16 * 1024 * 1024)  # 16 MB chunks
+    topo_path, traj_file_paths = upload_files_to_server(tmpdir, topology, trajectories)
 
-    traj_files = []
-    for traj in trajectories:
-        traj_path = os.path.join(tmpdir, secure_filename(traj.filename))
-        traj.save(traj_path, buffer_size=16 * 1024 * 1024)
-        traj_files.append(traj_path)
-
-    saved_files = {"topology": [topo_path], "trajectory": traj_files}
+    saved_files = {"topology": [topo_path], "trajectory": traj_file_paths}
     cache_extracted_files(tmpdir, saved_files)
 
-    result = extract_files_validate(topo_path, traj_files)
+    result = extract_files_validate(topo_path, traj_file_paths)
 
     return jsonify(
         {

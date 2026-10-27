@@ -239,3 +239,30 @@ def save_pending_submission(json_form, tmpdir):
         form_values = request.form.to_dict(flat=False)
         form_values.pop("workflow_id", None)
         json.dump(form_values, f)
+
+
+def upload_files_to_server(tmpdir, topology, trajectories):
+    """Save uploaded topology and trajectory files in a workflow directory.
+
+    Filenames are sanitized before saving. Files are written in 16 MiB chunks.
+
+    Args:
+        tmpdir (str): Directory where the uploaded files will be stored.
+        topology (FileStorage): Uploaded topology file.
+        trajectories (Iterable[FileStorage]): Uploaded trajectory files.
+
+    Returns:
+        tuple[str, list[str]]: The saved topology path and the saved trajectory
+        paths.
+    """
+
+    topo_path = os.path.join(tmpdir, secure_filename(topology.filename))
+    topology.save(topo_path, buffer_size=16 * 1024 * 1024)  # 16 MB chunks
+
+    traj_file_paths = []
+    for traj in trajectories:
+        traj_path = os.path.join(tmpdir, secure_filename(traj.filename))
+        traj.save(traj_path, buffer_size=16 * 1024 * 1024)
+        traj_file_paths.append(traj_path)
+
+    return topo_path, traj_file_paths

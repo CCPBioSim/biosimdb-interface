@@ -12,10 +12,9 @@ __version__ = "1.0.0"
 from dotenv import load_dotenv
 from flask import Flask
 
-from .form.workflows import WorkflowStore
+from .core.workflows import WorkflowStore
 
 load_dotenv()
-# UPLOAD_FOLDER = "/tmp"
 
 
 def create_app(test_config=None):
@@ -87,16 +86,24 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from .form import form_bp
-
-    app.register_blueprint(form_bp, url_prefix=app.config["APPLICATION_BASE"])
-
-    from .login import bp as login_bp
-
-    app.register_blueprint(login_bp, url_prefix=app.config["APPLICATION_BASE"])
-
     from .home import home_bp
 
     app.register_blueprint(home_bp, url_prefix=app.config["APPLICATION_BASE"])
+
+    from .webform import webform_bp
+
+    app.register_blueprint(webform_bp, url_prefix=app.config["APPLICATION_BASE"])
+
+    from .extract import extract_bp
+
+    app.register_blueprint(extract_bp, url_prefix=app.config["APPLICATION_BASE"])
+
+    from .auth import auth_bp
+
+    app.register_blueprint(auth_bp, url_prefix=app.config["APPLICATION_BASE"])
+
+    from .submit import submit_bp
+
+    app.register_blueprint(submit_bp, url_prefix=app.config["APPLICATION_BASE"])
 
     return app

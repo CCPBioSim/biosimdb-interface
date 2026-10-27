@@ -39,7 +39,7 @@
 
         <form
             class="biosimdb-form-card mb-4"
-            action="{{ url_for('form.webform') }}"
+            action="{{ url_for('webform.webform') }}"
             method="POST"
             enctype="multipart/form-data"
             id="simulationForm"
@@ -69,7 +69,7 @@
                         {% if session.get('access_token') %}
 
                             <a
-                                href="{{ url_for('login.logout') }}"
+                                href="{{ url_for('auth.logout') }}"
                                 class="btn btn-sm btn-outline-secondary biosimdb-btn"
                             >
                                 Log out
@@ -81,7 +81,7 @@
                         {% else %}
 
                             <a
-                                href="{{ url_for('login.login') }}"
+                                href="{{ url_for('auth.login') }}"
                                 class="btn btn-sm btn-primary biosimdb-btn biosimdb-btn-primary"
                             >
                                 Log in

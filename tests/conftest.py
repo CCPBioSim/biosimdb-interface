@@ -4,7 +4,7 @@ import uuid
 import pytest
 
 from biosimdb_interface import create_app
-from biosimdb_interface.form.upload import cache_extracted_files
+from biosimdb_interface.uploads.to_server import cache_extracted_files
 
 
 @pytest.fixture

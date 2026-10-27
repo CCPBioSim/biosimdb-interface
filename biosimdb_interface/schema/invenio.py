@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+"""
+Minimal metadata template for submitting to Invenio.
+"""
 
 from datetime import datetime
 from zoneinfo import ZoneInfo

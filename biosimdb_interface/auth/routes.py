@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""OAuth2 authorization code flow for BioSimDB login."""
+"""OAuth2 login routes for BioSimDB."""
 
 import requests
 from flask import current_app, redirect, request, session, url_for

@@ -18,15 +18,41 @@ from .utils import (
 
 
 def _pending_file_meta_path(tmpdir):
+    """Build the path to the cached file metadata JSON.
+
+    Args:
+        tmpdir (str): Workflow directory containing submission artifacts.
+
+    Returns:
+        str: Path to the pending file metadata file.
+    """
     return os.path.join(tmpdir, PENDING_FILE_META_FILENAME)
 
 
 def _save_pending_file_meta(tmpdir, file_meta):
+    """Write extracted file metadata to the workflow directory.
+
+    Args:
+        tmpdir (str): Workflow directory for submission artifacts.
+        file_meta (list[dict]): Metadata records to persist.
+    """
     with open(_pending_file_meta_path(tmpdir), "w") as f:
         json.dump(file_meta, f)
 
 
 def _load_pending_file_meta(tmpdir):
+    """Load cached file metadata when it exists.
+
+    Args:
+        tmpdir (str): Workflow directory containing submission artifacts.
+
+    Returns:
+        list[dict] | None: Cached metadata, or ``None`` if the cache file is
+        missing.
+
+    Raises:
+        json.JSONDecodeError: If the cache file contains invalid JSON.
+    """
     path = _pending_file_meta_path(tmpdir)
     if not os.path.isfile(path):
         return None
@@ -197,7 +223,12 @@ def extract_uploaded_file_metadata(tmpdir):
 
 
 def save_pending_submission(json_form, tmpdir):
-    """Persist validated submission data in the given workflow directory."""
+    """Persist validated metadata and submitted form values for later upload.
+
+    Adds cached file metadata to ``json_form``, then writes the simulation
+    metadata and form values into the workflow directory. Requires an active
+    Flask request context.
+    """
     file_meta = _load_pending_file_meta(tmpdir) or []
 
     json_form["files"] = file_meta

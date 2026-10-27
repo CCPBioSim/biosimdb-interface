@@ -9,11 +9,17 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
-from flask import current_app
+from flask import current_app, request
 
 
 class WorkflowNotFound(Exception):
     """Raised when a workflow ID is missing, invalid, or expired."""
+
+
+def get_workflow():
+    """Resolve the tab-scoped workflow sent with the current request."""
+    workflow_id = request.values.get("workflow_id")
+    return current_app.extensions["workflow_store"].get(workflow_id)
 
 
 @dataclass

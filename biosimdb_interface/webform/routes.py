@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""Routes for rendering and processing the BioSimDB metadata webform.
+
+The GET route renders the form and schema. The POST route resolves the
+workflow, validates extracted files and metadata, then handles the requested
+save or submission action.
+"""
 
 from flask import (
     render_template,
@@ -6,7 +12,7 @@ from flask import (
     session,
 )
 
-from ..core.workflows import WorkflowNotFound
+from ..core.workflows import WorkflowNotFound, get_workflow
 from ..extract.validation import validate_with_mdanalysis
 from ..schema.webform import WEBFORM_SCHEMA, get_simulation_metadata
 from ..uploads.to_server import load_extracted_files
@@ -16,13 +22,19 @@ from .services import (
     build_metadata,
     check_ready,
     errors_response,
-    get_workflow,
 )
 
 
 @webform_bp.route("/webform", methods=["GET"])
 def webform():
-    """Render the metadata form."""
+    """Render the metadata form with the current simulation schema.
+
+    Consumes the ``force_clear_client_state`` session flag when present and
+    passes it to the template.
+
+    Returns:
+        Response: Rendered webform page.
+    """
     clear_client_state = bool(session.pop("force_clear_client_state", False))
     schema = {
         **WEBFORM_SCHEMA,
@@ -42,7 +54,18 @@ def webform():
 
 @webform_bp.route("/webform", methods=["POST"])
 def webform_post():
-    """Validate and handle a metadata save or submission request."""
+    """Validate form data and handle a metadata save or submission request.
+
+    Resolves the workflow ID from the request, checks extracted files and
+    metadata, then dispatches to the handler for the ``save`` or ``submit``
+    action.
+
+    Returns:
+        Response: JSON validation errors, a save response, or the response
+        produced by the submission handler. Invalid or missing workflows and
+        readiness failures return HTTP 400; validation errors use the default
+        response status.
+    """
     try:
         workflow = get_workflow()
     except WorkflowNotFound as exc:

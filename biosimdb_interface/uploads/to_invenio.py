@@ -111,7 +111,7 @@ def prepare_for_invenio(sim_metadata, tmpdir):
         json.dump(invenio_data, f, indent=2)
 
     file_paths = _load_pending_upload_paths(tmpdir)
-    _, draft_id = _data_collections_upload(
+    draft_id = _data_collections_upload(
         metadata_path, file_paths, cancelled=lambda: is_submission_cancelled(tmpdir)
     )
     return draft_id

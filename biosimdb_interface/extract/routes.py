@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Metadata extraction endpoint.
+Simulation files metadata extraction endpoint.
 """
 
 import os

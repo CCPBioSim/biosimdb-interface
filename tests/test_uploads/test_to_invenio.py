@@ -24,7 +24,7 @@ def test_prepare_for_invenio_writes_metadata_and_uploads_files(app, tmp_path):
         with patch(
             "biosimdb_interface.uploads.to_invenio._data_collections_upload"
         ) as mock_upload:
-            mock_upload.return_value = (None, "draft-abc")
+            mock_upload.return_value = "draft-abc"
 
             draft_id = to_invenio.prepare_for_invenio(form_data, str(tmp_path))
 

@@ -1,12 +1,5 @@
-"""Upload files to an InvenioRDM instance draft record.
-
-By default the file is sent as a multipart (chunked) upload: each part is PUT
-straight to object storage via a pre-signed URL, so no single request stays
-open for the whole transfer.
-If multipart fails for a smaller file, use one PUT through the repository.
-
-Adapted from a script provided by Andrew Harper, STFC.
-"""
+#!/usr/bin/env python
+"""Upload files to an InvenioRDM instance draft record."""
 
 import json
 from pathlib import Path
@@ -25,6 +18,30 @@ PART_SIZE = 100  # 100 MiB; S3 requires parts of at least 5 MiB
 def run_record_upload(
     api_url, api_key, metadata_path, files, community, cancelled=lambda: False
 ):
+    """Create a draft, upload its files, and submit it to a community.
+
+    Creates a draft using the metadata JSON, uploads each file, then submits
+    the draft for review by the specified community. If an upload or
+    submission step fails, attempts to delete the draft and re-raises the
+    error.
+
+    Args:
+        api_url (str): InvenioRDM base URL, with or without the ``/api`` suffix.
+        api_key (str): Bearer token for the InvenioRDM API.
+        metadata_path (str | Path): Path to the record metadata JSON file.
+        files (Iterable[str | Path]): Files to upload.
+        community (str): Community identifier to submit the draft to.
+        cancelled (Callable[[], bool]): Callback that returns ``True`` when
+            the upload should be cancelled.
+
+    Returns:
+        tuple: ``(None, draft_id)`` for the created record.
+
+    Raises:
+        UploadCancelled: If cancellation is requested.
+        requests.RequestException: If an API request fails.
+        Exception: If a file transfer or API response is unsuccessful.
+    """
     api = api_url.removesuffix("/api").rstrip("/")
     s = requests.Session()
     s.headers.update(
@@ -72,4 +89,4 @@ def run_record_upload(
         r = s.delete(f"{api}/api/records/{draft_id}/draft", timeout=30)
         current_app.logger.info(f"Draft {draft_id} delete -> HTTP {r.status_code}")
         raise
-    return None, draft_id
+    return draft_id

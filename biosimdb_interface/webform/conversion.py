@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""Convert flat webform field names and values into nested metadata.
+
+Parses bracket-notation field names into dictionaries and lists, applies
+schema type hints, and converts vector values into numeric lists. Invalid
+typed values are reported together with ``FormConversionError``.
+"""
 
 import re
 
@@ -73,7 +79,21 @@ def _get_typehint_map():
 
 
 def _parse_vector(raw, field):
-    """Parse '1, 2, 3' to a flat list, or '1,2; 3,4' to a list of rows."""
+    """Parse a comma-separated vector or semicolon-separated rows of numbers.
+
+    A single row such as ``"1, 2, 3"`` returns a flat list. Multiple rows such
+    as ``"1, 2; 3, 4"`` return a list of lists; all rows must have equal length.
+
+    Args:
+        raw (str): Vector text to parse.
+        field (str): Field path included in any error message.
+
+    Returns:
+        list[float] | list[list[float]]: Parsed vector values.
+
+    Raises:
+        ValueError: If a value is nonnumeric or rows have different lengths.
+    """
     rows = [r for r in re.split(r"[;\n]", raw) if r.strip()]
     parsed = []
     for i, row in enumerate(rows, start=1):

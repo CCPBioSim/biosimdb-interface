@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""OAuth2 authorization code flow for BioSimDB login."""
+"""OAuth2 login services for BioSimDB."""
 
 import secrets
 from urllib.parse import urlencode

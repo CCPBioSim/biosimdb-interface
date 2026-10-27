@@ -28,7 +28,7 @@ def test_run_record_upload_calls_repository_flow(monkeypatch, tmp_path):
     upload_file_mock = MagicMock(return_value="https://example.org/commit")
     monkeypatch.setattr(client, "upload_file", upload_file_mock)
 
-    returned_repo, draft_id = client.run_record_upload(
+    draft_id = client.run_record_upload(
         api_url="https://example.org/api",
         api_key="secret",
         metadata_path=metadata_path,
@@ -36,7 +36,6 @@ def test_run_record_upload_calls_repository_flow(monkeypatch, tmp_path):
         community="my-community",
     )
 
-    assert returned_repo is None
     assert draft_id == "draft-123"
 
     session.headers.update.assert_called_once_with(

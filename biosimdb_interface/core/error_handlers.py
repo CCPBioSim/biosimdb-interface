@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""Flask error handlers for the webform blueprint.
+
+Converts known form and external-service errors into user-facing responses.
+Unexpected extraction errors return JSON for the fetch-based extraction
+request, while other unexpected errors are logged and redirect to the webform.
+"""
 
 from flask import (
     current_app,
@@ -17,13 +23,29 @@ from .workflows import WorkflowNotFound
 
 @form_bp.errorhandler(WebformError)
 def handle_metadata_extraction_error(exc):
+    """Return a JSON response for a known webform error.
+
+    Args:
+        exc (WebformError): Error containing a message, status code, and
+            optional response payload.
+
+    Returns:
+        tuple: JSON error response and the exception's HTTP status code.
+    """
     current_app.logger.exception(f"Metadata extraction Error: {exc}")
     return jsonify(exc.to_dict()), exc.status_code
 
 
 @form_bp.errorhandler(ExternalAPIError)
 def handle_external_api_error(exc):
-    """Show a friendly message when an external service fails."""
+    """Flash a friendly message and redirect after an external API failure.
+
+    Args:
+        exc (ExternalAPIError): The external-service error that was raised.
+
+    Returns:
+        Response: Redirect to the webform.
+    """
     current_app.logger.error("External API error: %s", exc)
     flash(
         "A remote service is currently unavailable. Please try again later.", "danger"
@@ -33,7 +55,19 @@ def handle_external_api_error(exc):
 
 @form_bp.errorhandler(Exception)
 def handle_unexpected_error(exc):
-    """Log an unexpected blueprint error and return a JSON error response."""
+    """Log an unexpected error and return an endpoint-appropriate response.
+
+    HTTP exceptions are passed through. Unexpected errors from the metadata
+    extraction endpoint return a JSON 500 response and discard its workflow.
+    Other unexpected errors flash a message and redirect to the webform.
+
+    Args:
+        exc (Exception): The error raised while handling the request.
+
+    Returns:
+        Response: The original HTTP exception, a JSON error response, or a
+        redirect to the webform.
+    """
     if isinstance(exc, HTTPException):
         return exc
 

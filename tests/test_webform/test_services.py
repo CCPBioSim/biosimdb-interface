@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from biosimdb_interface.core.workflows import WorkflowNotFound
+from biosimdb_interface.webform.services import _remove_empty_fields
 
 
 def test_submit_without_login_redirects(client, extracted_workflow):
@@ -101,7 +102,7 @@ def test_webform_cached_files_invalid(client, extracted_workflow):
 def test_cancel_submit_missing_workflow(client):
     """Rejects cancellation for an unknown workflow."""
     with patch(
-        "biosimdb_interface.webform.services.get_workflow",
+        "biosimdb_interface.core.workflows.get_workflow",
         side_effect=WorkflowNotFound("missing"),
     ):
         response = client.post("/cancel_submit?workflow_id=missing")
@@ -134,3 +135,35 @@ def test_save_pending_submission(client, extracted_workflow):
 
     assert response.status_code == 302
     mock_save.assert_called_once()
+
+
+def test_remove_empty_fields_returns_non_dict_unchanged():
+    """Returns non-dictionary input unchanged."""
+    value = ["", None]
+
+    assert _remove_empty_fields(value) is value
+
+
+def test_remove_empty_fields_cleans_nested_dicts_and_lists():
+    """Removes empty values recursively while preserving populated values."""
+    data = {
+        "keep": "value",
+        "empty_string": "",
+        "none_value": None,
+        "empty_dict": {},
+        "nested": {"remove": None},
+        "items": [
+            None,
+            "",
+            {},
+            {"remove": ""},
+            {"keep": "nested value", "nested": {"remove": ""}},
+        ],
+        "zero": 0,
+    }
+
+    assert _remove_empty_fields(data) == {
+        "keep": "value",
+        "items": [{"keep": "nested value"}],
+        "zero": 0,
+    }

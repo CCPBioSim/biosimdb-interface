@@ -94,10 +94,6 @@ def create_app(test_config=None):
 
     app.register_blueprint(webform_bp, url_prefix=app.config["APPLICATION_BASE"])
 
-    # from .uploads import uploads_bp
-
-    # app.register_blueprint(uploads_bp, url_prefix=app.config["APPLICATION_BASE"])
-
     from .extract import extract_bp
 
     app.register_blueprint(extract_bp, url_prefix=app.config["APPLICATION_BASE"])

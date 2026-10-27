@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Upload files to an InvenioRDM instance draft record.
 
 By default the file is sent as a multipart (chunked) upload: each part is PUT
@@ -32,6 +33,16 @@ SLOW_AFTER = 120  # seconds before multipart is judged too slow
 
 
 def check(r, expected, what):
+    """Validate an HTTP response status.
+
+    Args:
+        r (requests.Response): Response to check.
+        expected (int): Expected HTTP status code.
+        what (str): Operation name used in the error message.
+
+    Raises:
+        Exception: If the response status does not match ``expected``.
+    """
     if r.status_code == expected:
         return
     hint = {
@@ -46,6 +57,20 @@ def check(r, expected, what):
 
 
 def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
+    """Initialize and stream a file using a single content PUT.
+
+    Args:
+        s (requests.Session): Authenticated session for the Invenio API.
+        api (str): Invenio instance base URL.
+        draft_id (str): ID of the draft receiving the file.
+        path (str | Path): Local file path.
+        key (str): File key to create in the draft.
+        size (int): File size in bytes.
+        cancelled (Callable[[], bool]): Callback indicating cancellation.
+
+    Returns:
+        str: File commit URL.
+    """
     r = s.post(f"{api}/api/records/{draft_id}/draft/files", json=[{"key": key}])
     check(r, 201, "File init")
     links = next(e["links"] for e in r.json()["entries"] if e["key"] == key)
@@ -83,7 +108,22 @@ def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
 
 
 def put_part(s3, path, part, url, part_size, size, progress, cancelled):
-    """PUT one part to its pre-signed S3 URL, retrying on failure."""
+    """Upload one file part to its pre-signed URL, retrying failed attempts.
+
+    Args:
+        s3 (requests.Session): Session used for the pre-signed storage URL.
+        path (str | Path): Local file path.
+        part (int): One-based part number.
+        url (str): Pre-signed URL for this part.
+        part_size (int): Maximum part size in bytes.
+        size (int): Total file size in bytes.
+        progress (Progress): Shared upload progress tracker.
+        cancelled (Callable[[], bool]): Callback indicating cancellation.
+
+    Raises:
+        UploadCancelled: If cancellation is requested.
+        RuntimeError: If the part fails after all retry attempts.
+    """
     if cancelled():
         raise UploadCancelled
     offset = (part - 1) * part_size
@@ -113,6 +153,27 @@ def put_part(s3, path, part, url, part_size, size, progress, cancelled):
 def upload_multipart(
     s, api, draft_id, path, key, size, chunk_mb, workers, cancelled=lambda: False
 ):
+    """Initialize multipart transfer, upload parts, and return the commit URL.
+
+    Args:
+        s (requests.Session): Authenticated session for the Invenio API.
+        api (str): Invenio instance base URL.
+        draft_id (str): ID of the draft receiving the file.
+        path (str | Path): Local file path.
+        key (str): File key to create in the draft.
+        size (int): File size in bytes.
+        chunk_mb (int): Requested part size in MiB, subject to S3 limits.
+        workers (int): Maximum number of concurrent part uploads.
+        cancelled (Callable[[], bool]): Callback indicating cancellation.
+
+    Returns:
+        str: File commit URL.
+
+    Raises:
+        UploadCancelled: If cancellation is requested.
+        MultipartTooSlow: If the cancellation callback signals a time limit.
+        Exception: If multipart initialization fails.
+    """
     part_size = max(chunk_mb * 1024 * 1024, MIN_PART_SIZE, math.ceil(size / MAX_PARTS))
     parts = max(1, math.ceil(size / part_size))
 
@@ -175,7 +236,24 @@ def upload_multipart(
 
 
 def upload_file(s, api, draft_id, path, key, size, chunk_mb, cancelled=lambda: False):
-    """Upload one file; returns its commit URL."""
+    """Upload one file, using multipart transfer with a slow-upload fallback.
+
+    Large files use multipart transfer. Smaller files also try multipart
+    first, then fall back to a single PUT if the multipart time limit expires.
+
+    Args:
+        s (requests.Session): Authenticated session for the Invenio API.
+        api (str): Invenio instance base URL.
+        draft_id (str): ID of the draft receiving the file.
+        path (str | Path): Local file path.
+        key (str): File key to create in the draft.
+        size (int): File size in bytes.
+        chunk_mb (int): Requested multipart part size in MiB.
+        cancelled (Callable[[], bool]): Callback indicating cancellation.
+
+    Returns:
+        str: File commit URL.
+    """
     if size > SINGLE_MAX:
         return upload_multipart(
             s, api, draft_id, path, key, size, chunk_mb, 1, cancelled

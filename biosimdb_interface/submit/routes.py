@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""Routes for resuming, executing, cancelling, and displaying submissions.
+
+Submission state is associated with a workflow ID. Routes use that workflow
+to access pending metadata and files, and Flask session state for login and
+post-submission messages.
+"""
 
 import json
 import os
@@ -28,19 +34,22 @@ from ..core.cancellation import (
     is_submission_cancelled,
     mark_submission_cancelled,
 )
-from ..core.workflows import WorkflowNotFound
+from ..core.workflows import WorkflowNotFound, get_workflow
 from ..uploads.to_invenio import prepare_for_invenio
 from ..uploads.utils import SIM_METADATA_FILENAME
-from ..webform.services import get_workflow
 from . import submit_bp
 
 
 @submit_bp.route("/resume_submit")
 def resume_submit():
-    """Resume a pending submission after successful login.
+    """Resume a pending submission after login.
 
-    Redirects to login if unauthenticated, or to the webform if no pending
-    submission is found in the session.
+    Resolves the workflow ID from the request and verifies that pending form
+    data exists before rendering the upload progress page.
+
+    Returns:
+        Response: Progress page, login/webform redirect, or JSON 400 response
+        if the workflow ID is missing, invalid, or expired.
     """
     if not session.get("access_token"):
         return redirect(url_for("auth.login"))
@@ -70,16 +79,18 @@ def resume_submit():
 
 @submit_bp.route("/do_submit", methods=["POST"])
 def do_submit():
-    """Execute the deferred Invenio upload using session-stored form data.
-    Called automatically by the loading page after login.
-    Automatically invite user to Invenio instance community, then submit.
-    Clears pending session data after upload and renders the success page
-    with the record URL.
+    """Upload the pending submission to InvenioRDM.
+
+    Checks cancellation and saved metadata, invites the user to the target
+    community, and uploads the record. On success, clears workflow and login
+    state and redirects to the success page.
+
+    Returns:
+        Response: Redirect to the success page, login page, or webform; or a
+        JSON 400 response if the workflow cannot be resolved.
     """
     try:
-        workflow = current_app.extensions["workflow_store"].get(
-            request.args.get("workflow_id")
-        )
+        workflow = get_workflow()
     except WorkflowNotFound as exc:
         return jsonify({"validation_errors": [str(exc)]}), 400
 
@@ -122,7 +133,7 @@ def do_submit():
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else None
         current_app.logger.error(exc)
-        current_app.logger.exception("Invenio returned a HTTPError response")
+        current_app.logger.error("Invenio returned a HTTPError response")
         if status in (401, 403):
             session.pop("access_token", None)  # force fresh login
             session["post_login_redirect"] = url_for(
@@ -134,7 +145,6 @@ def do_submit():
                 "Please sign in again and the submission will resume automatically.",
                 "warning",
             )
-            discard_workflow()
             return redirect(url_for("auth.login"))
 
         session.pop("access_token", None)  # force fresh login
@@ -193,16 +203,18 @@ def do_submit():
 
 @submit_bp.route("/cancel_submit", methods=["POST"])
 def cancel_submit():
-    """Signal an in-progress submission to stop and reset client-facing session state.
+    """Signal cancellation of the current submission.
 
-    Does not delete the tmpdir directly, since the in-flight do_submit request
-    still owns those files; do_submit checks the cancellation flag itself and
-    performs its own cleanup once it is safe to do so.
+    Marks the workflow's cancellation flag and clears authentication and
+    client-facing session state. The in-progress upload is responsible for
+    cleaning up its workflow files.
+
+    Returns:
+        Response: JSON success response, or JSON 400 response if the workflow
+        ID cannot be resolved.
     """
     try:
-        workflow = current_app.extensions["workflow_store"].get(
-            request.args.get("workflow_id")
-        )
+        workflow = get_workflow()
     except WorkflowNotFound as exc:
         return jsonify({"validation_errors": [str(exc)]}), 400
 
@@ -228,7 +240,12 @@ def cancel_submit():
 
 @submit_bp.route("/submit_success")
 def submit_success():
-    """Render the successful Invenio submission page."""
+    """Display the completed submission link.
+
+    Returns:
+        Response: Success page when a submitted record URL is in the session;
+        otherwise redirects to the webform.
+    """
     record_url = session.get("submitted_record_url")
     if not record_url:
         flash("No completed submission found.", "warning")

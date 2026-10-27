@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+
+import re
+
+from biosimdb_interface.core.errors import FormConversionError
+from biosimdb_interface.schema.webform import get_simulation_metadata
+
+
+def _set_nested(d, parts, value):
+    """Recursively set a value in a nested dictionary using a list of key parts.
+
+    Numeric parts are treated as 1-based list indices. Non-numeric parts
+    are treated as dictionary keys.
+
+    Args:
+        d: Dictionary to set the value in (modified in place).
+        parts: List of string key parts representing the path to the value.
+        value: Value to set at the specified path.
+    """
+    key = parts[0]
+    if len(parts) == 1:
+        d[key] = value
+        return
+    next_part = parts[1]
+    if next_part.isdigit():
+        idx = int(next_part) - 1
+        d.setdefault(key, [])
+        while len(d[key]) <= idx:
+            d[key].append({})
+        _set_nested(d[key][idx], parts[2:], value) if len(parts) > 2 else d[
+            key
+        ].__setitem__(idx, value)
+    else:
+        d.setdefault(key, {})
+        _set_nested(d[key], parts[1:], value)
+
+
+def _build_typehint_map(fields, path_parts, result):
+    """Recursively build a map of field path tuples to their typehint.
+
+    Args:
+        fields (dict): Dictionary of field definitions from the webform schema.
+        path_parts (list[str]): Accumulated path segments leading to the current fields.
+        result (dict): Dictionary modified in place mapping path tuples to typehint strings.
+    """
+    for field_name, field in fields.items():
+        current = path_parts + [field_name]
+        if field.get("typehint"):
+            result[tuple(current)] = field["typehint"]
+        if field.get("fields"):
+            _build_typehint_map(field["fields"], current, result)
+        if field.get("multiple"):
+            _build_typehint_map(field.get("fields", {}), current + ["*"], result)
+
+
+def _get_typehint_map():
+    """Build a complete typehint map from the webform schema.
+
+    Iterates over all sections and fields in ``simulation_metadata`` and
+    delegates to :func:`_build_typehint_map` to populate the result.
+
+    Returns:
+        dict: Mapping of field path tuples (e.g. ``('composition', 'molecule_ID', '*', 'atom_count')``)
+        to typehint strings (``'integer'``, ``'float'``, or ``'boolean'``).
+        Numeric list indices are represented as ``'*'`` wildcards.
+    """
+    result = {}
+    simulation_metadata = get_simulation_metadata()
+    for section_key, section in simulation_metadata.items():
+        fields = section.get("fields", {})
+        _build_typehint_map(fields, [section_key], result)
+    return result
+
+
+def _parse_vector(raw, field):
+    """Parse '1, 2, 3' to a flat list, or '1,2; 3,4' to a list of rows."""
+    rows = [r for r in re.split(r"[;\n]", raw) if r.strip()]
+    parsed = []
+    for i, row in enumerate(rows, start=1):
+        try:
+            parsed.append([float(x) for x in row.split(",") if x.strip()])
+        except ValueError:
+            raise ValueError(
+                f"{field}: row {i} {row.strip()!r} is not a comma-separated list of numbers"
+            ) from None
+    if len(rows) <= 1:
+        return parsed[0] if parsed else []
+    lengths = {len(r) for r in parsed}
+    if len(lengths) > 1:
+        raise ValueError(f"{field}: rows have different lengths {sorted(lengths)}")
+    return parsed
+
+
+def form_to_json(form):
+    """Convert flat HTML form data into a nested dictionary.
+
+    Parses bracket-notation field names (e.g. section[field][1][subfield])
+    into nested dicts and lists. Skips submit/save keys and TEMPLATE entries.
+    Splits vector_value fields from comma-separated strings into float lists.
+
+    Args:
+        form: Flat form data (ImmutableMultiDict or dict) from a POST request.
+
+    Returns:
+        dict: Nested dictionary of form values.
+    """
+    typehint_map = _get_typehint_map()
+    data = {}
+    errors = []
+    # Use lists() so repeated keys (e.g. multiselect name="x[]") are preserved.
+    if hasattr(form, "lists"):
+        key_values_iter = form.lists()
+    else:
+        # Fallback for plain dict-like input
+        key_values_iter = (
+            (k, v if isinstance(v, list) else [v]) for k, v in form.items()
+        )
+
+    for key, values in key_values_iter:
+        if key in ("save", "submit"):
+            continue
+
+        parts = re.findall(r"\w+", key)
+        if not parts or "TEMPLATE" in parts:
+            continue
+
+        # Vector quantity field stays scalar-like text input; parse first value only.
+        if parts[-1] == "vector_value":
+            raw = values[0] if values else ""
+            if isinstance(raw, str) and raw:
+                try:
+                    value = _parse_vector(raw, ".".join(parts))
+                except ValueError as exc:
+                    errors.append(str(exc))
+                    continue
+            else:
+                value = raw
+            _set_nested(data, parts, value)
+            continue
+
+        # Build schema lookup key replacing numeric indices with '*'
+        lookup = tuple(p if not p.isdigit() else "*" for p in parts)
+        typehint = typehint_map.get(lookup) or typehint_map.get(tuple(parts))
+
+        converted_values = []
+        for value in values:
+            if value != "" and typehint:
+                if typehint == "integer":
+                    try:
+                        value = int(value)
+                    except (ValueError, TypeError):
+                        errors.append(
+                            f"{'.'.join(parts)}: {value!r} is not a valid {typehint}"
+                        )
+                elif typehint == "float":
+                    try:
+                        value = float(value)
+                    except (ValueError, TypeError):
+                        errors.append(
+                            f"{'.'.join(parts)}: {value!r} is not a valid {typehint}"
+                        )
+                elif typehint == "boolean":
+                    value = bool(value)
+            converted_values.append(value)
+
+            # HTML names ending in [] represent schema multivalued fields, even when
+            # the user selects only one option.
+            if key.endswith("[]"):
+                value_out = [value for value in converted_values if value != ""]
+            else:
+                value_out = converted_values[0] if converted_values else ""
+
+        _set_nested(data, parts, value_out)
+    if errors:
+        raise FormConversionError(errors)
+    return data

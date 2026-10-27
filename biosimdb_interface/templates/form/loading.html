@@ -22,7 +22,7 @@
     const controller = new AbortController();
     let cancelled = false;
 
-    fetch("{{ url_for('form.do_submit', workflow_id=workflow_id) }}", {
+    fetch("{{ url_for('submit.do_submit', workflow_id=workflow_id) }}", {
         method: "POST",
         signal: controller.signal,
     })
@@ -39,14 +39,14 @@
     })
     .catch(err => {
         if (err.name === 'AbortError') return; // handled by cancel button
-        window.location.replace("{{ url_for('form.webform') }}");
+        window.location.replace("{{ url_for('webform.webform') }}");
     });
 
     document.getElementById('cancel-submit-btn').addEventListener('click', () => {
         cancelled = true;
         controller.abort();
-        fetch("{{ url_for('form.cancel_submit', workflow_id=workflow_id) }}", { method: 'POST' })
-            .finally(() => window.location.replace("{{ url_for('form.webform') }}"));
+        fetch("{{ url_for('submit.cancel_submit', workflow_id=workflow_id) }}", { method: 'POST' })
+            .finally(() => window.location.replace("{{ url_for('webform.webform') }}"));
     });
 </script>
 {% endblock %}

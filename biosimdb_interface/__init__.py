@@ -12,6 +12,7 @@ __version__ = "2.0.0"
 from dotenv import load_dotenv
 from flask import Flask
 
+from .core.error_handlers import handle_unexpected_error
 from .core.workflows import WorkflowStore
 
 load_dotenv()
@@ -105,5 +106,8 @@ def create_app(test_config=None):
     from .submit import submit_bp
 
     app.register_blueprint(submit_bp, url_prefix=app.config["APPLICATION_BASE"])
+
+    # register unexpected errors handler app-wide
+    app.register_error_handler(Exception, handle_unexpected_error)
 
     return app

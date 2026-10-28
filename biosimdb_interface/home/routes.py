@@ -19,7 +19,10 @@ def home():
         "home/home.html",
         links={
             "deposit": url_for("webform.webform"),
-            "biosimdb": f"{current_app.config.get('BASE_URL', '').rstrip('/')}/communities/biosimdb",
+            "biosimdb": (
+                f"{current_app.config.get('BASE_URL', '').rstrip('/')}"
+                "/communities/biosimdb"
+            ),
             "docs": "https://biosimdb-interface.readthedocs.io/",
             "github": "https://github.com/CCPBioSim/biosimdb-interface",
             "extract": "https://biosim-extractor.readthedocs.io/en/latest/",

@@ -47,7 +47,8 @@ def _build_typehint_map(fields, path_parts, result):
     Args:
         fields (dict): Dictionary of field definitions from the webform schema.
         path_parts (list[str]): Accumulated path segments leading to the current fields.
-        result (dict): Dictionary modified in place mapping path tuples to typehint strings.
+        result (dict): Dictionary modified in place mapping path tuples to typehint
+            strings.
     """
     for field_name, field in fields.items():
         current = path_parts + [field_name]
@@ -66,8 +67,9 @@ def _get_typehint_map():
     delegates to :func:`_build_typehint_map` to populate the result.
 
     Returns:
-        dict: Mapping of field path tuples (e.g. ``('composition', 'molecule_ID', '*', 'atom_count')``)
-        to typehint strings (``'integer'``, ``'float'``, or ``'boolean'``).
+        dict: Mapping of field path tuples (e.g.
+        ``('composition', 'molecule_ID', '*', 'atom_count')``) to typehint strings
+        (``'integer'``, ``'float'``, or ``'boolean'``).
         Numeric list indices are represented as ``'*'`` wildcards.
     """
     result = {}
@@ -101,7 +103,8 @@ def _parse_vector(raw, field):
             parsed.append([float(x) for x in row.split(",") if x.strip()])
         except ValueError:
             raise ValueError(
-                f"{field}: row {i} {row.strip()!r} is not a comma-separated list of numbers"
+                f"{field}: row {i} {row.strip()!r} is not a comma-separated list of "
+                "numbers"
             ) from None
     if len(rows) <= 1:
         return parsed[0] if parsed else []

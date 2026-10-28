@@ -72,7 +72,9 @@ HANDLERS = {"save": _handle_save, "submit": _handle_submit}
 
 
 def _remove_empty_fields(d):
-    """Recursively remove empty strings, None, empty dicts, and empty lists from a nested dict.
+    """Recursively remove empty values from a nested dict.
+
+    Empty strings, None, empty dicts, and empty lists are removed.
 
     Args:
         d: Nested dictionary to clean.
@@ -117,8 +119,10 @@ def build_metadata(form, tmpdir, action):
     metadata for saves, and validates the result against the BioSim schema.
 
     Three checks of form data:
-        1. use the webform fields and expected types to check fields are correctly formatted.
-        2. Check fields that are to be converted to standard units are correctly formatted.
+        1. use the webform fields and expected types to check fields are correctly
+           formatted.
+        2. Check fields that are to be converted to standard units are correctly
+           formatted.
         3. Check fields conform to linkml schema.
 
     Args:

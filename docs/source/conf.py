@@ -6,9 +6,11 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'biosimdb-interface'
-copyright = '2026, CCPBioSim'
-release = '2.1.0'
+import warnings
+
+project = "biosimdb-interface"
+copyright = "2026, CCPBioSim"
+release = "2.1.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -26,27 +28,26 @@ extensions = [
 ]
 
 autosummary_generate = True
-napoleon_google_docstring = False
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'furo'
-html_static_path = ['_static']
+html_theme = "furo"
+html_static_path = ["_static"]
 html_theme_options = {
     "dark_logo": "logos/biosimdb-logo-white.png",
     "light_logo": "logos/biosimdb-logo-black.png",
 }
 html_css_files = [
-    'styles.css',
+    "styles.css",
 ]
 
-import warnings
 warnings.filterwarnings("ignore", message="netCDF4 is not available")

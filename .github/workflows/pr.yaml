@@ -1,0 +1,55 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit
+    uses: CCPBioSim/.github/.github/workflows/ci-test-python.yaml@2bf63339f2515ec54777e952e8db3d8674d4e5ca # 0.14.0
+    permissions:
+      contents: read
+      checks: write
+      statuses: write
+    with:
+      package: biosimdb_interface
+      lowest-dependencies-check: true
+      os: '["ubuntu-26.04", "macos-26", "windows-2025-vs2026"]'
+      pre-test-command: |
+        if [ ! -d biosim-schema ]; then
+          curl -fsSL -o biosim-schema-artifacts.tar.gz \
+            https://github.com/CCPBioSim/biosim-schema/releases/latest/download/biosim-schema-artifacts.tar.gz
+          mkdir -p biosim-schema
+          tar -xzf biosim-schema-artifacts.tar.gz -C biosim-schema
+        fi
+        export WEBFORM_SCHEMA_PATH="${GITHUB_WORKSPACE}/biosim-schema/project/schema_webformfields.json"
+        export ENGINE_MAPPING_SCHEMA_PATH="${GITHUB_WORKSPACE}/biosim-schema/project/schema_enginemappings.json"
+        export BIOSIM_SCHEMA_PATH="${GITHUB_WORKSPACE}/biosim-schema/biosim_schema/schema/biosim_schema.yaml"
+        export SECRET_KEY=ci-testing-only-key
+
+  docs:
+    name: Docs
+    needs: unit
+    uses: CCPBioSim/.github/.github/workflows/ci-docs.yaml@2bf63339f2515ec54777e952e8db3d8674d4e5ca # 0.14.0
+    permissions:
+      contents: read
+    with:
+      pre-build-command: sphinx-apidoc --force -o docs/source/api_generated biosimdb_interface
+      build-dir: build
+      timeout-minutes: 15
+
+  pre-commit:
+    name: Pre-commit
+    needs: unit
+    uses: CCPBioSim/.github/.github/workflows/ci-pre-commit.yaml@2bf63339f2515ec54777e952e8db3d8674d4e5ca # 0.14.0
+    permissions:
+      contents: read
+    with:
+      timeout-minutes: 15

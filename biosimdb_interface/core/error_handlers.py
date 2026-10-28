@@ -16,12 +16,13 @@ from flask import (
 )
 from werkzeug.exceptions import HTTPException
 
-from ..webform import webform_bp
+from ..auth import auth_bp
+from ..extract import extract_bp
 from .errors import ExternalAPIError, WebformError
 from .workflows import WorkflowNotFound
 
 
-@webform_bp.errorhandler(WebformError)
+@extract_bp.errorhandler(WebformError)
 def handle_metadata_extraction_error(exc):
     """Return a JSON response for a known webform error.
 
@@ -36,7 +37,7 @@ def handle_metadata_extraction_error(exc):
     return jsonify(exc.to_dict()), exc.status_code
 
 
-@webform_bp.errorhandler(ExternalAPIError)
+@auth_bp.errorhandler(ExternalAPIError)
 def handle_external_api_error(exc):
     """Flash a friendly message and redirect after an external API failure.
 
@@ -53,7 +54,7 @@ def handle_external_api_error(exc):
     return redirect(url_for("webform.webform"))
 
 
-@webform_bp.errorhandler(Exception)
+# include this app-wide
 def handle_unexpected_error(exc):
     """Log an unexpected error and return an endpoint-appropriate response.
 

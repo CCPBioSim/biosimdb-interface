@@ -47,6 +47,8 @@ def create_app(test_config=None):
         SECRET_KEY=os.getenv("SECRET_KEY", "dev"),
         WORKFLOW_TTL_SECONDS=int(os.getenv("WORKFLOW_TTL_SECONDS", "14400")),
         UPLOAD_FOLDER=os.getenv("UPLOAD_FOLDER", "/tmp"),  # App specific
+        MAX_UPLOAD_BYTES=int(os.getenv("MAX_UPLOAD_BYTES", str(200 * 1024**3))),
+        UPLOAD_CHUNK_SIZE=int(os.getenv("UPLOAD_CHUNK_SIZE", str(32 * 1024 * 1024))),
         CLIENT_ID=os.getenv("CLIENT_ID", ""),
         CLIENT_SECRET=os.getenv("CLIENT_SECRET", ""),
         BIOSIMDB_SERVICE_TOKEN=os.getenv("BIOSIMDB_SERVICE_TOKEN", ""),
@@ -98,6 +100,12 @@ def create_app(test_config=None):
     from .extract import extract_bp
 
     app.register_blueprint(extract_bp, url_prefix=app.config["APPLICATION_BASE"])
+
+    from .uploads.routes import chunked_bp
+
+    app.register_blueprint(
+        chunked_bp, url_prefix=f"{app.config['APPLICATION_BASE']}/uploads"
+    )
 
     from .auth import auth_bp
 

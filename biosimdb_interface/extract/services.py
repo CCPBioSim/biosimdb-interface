@@ -24,9 +24,12 @@ def extract_files_validate(top_file, traj_file):
         traj_file=traj_file,
         store_file_metadata=False,  # not on webform so exclude
     )
+    current_app.logger.debug("Metadata populator created")
 
     result = populator.populate()
+    current_app.logger.debug("Metadata extracted")
     biosimschema_path = current_app.config["BIOSIM_SCHEMA_PATH"]
     populator.validate(result, biosimschema_path, strict=True)
+    current_app.logger.debug("Metadata validated")
 
     return result

@@ -8,39 +8,40 @@ from flask import current_app, jsonify, request
 from biosimdb_interface.core.errors import WebformError
 
 from ..core.workflows import WorkflowNotFound
-from ..uploads.to_server import cache_extracted_files, upload_files_to_server
+from ..uploads.chunked import UploadError, resolve_uploaded_file
+from ..uploads.to_server import cache_extracted_files
 from . import extract_bp
 from .services import extract_files_validate
 
 
 @extract_bp.route("/extract_metadata", methods=["POST"])
 def extract_metadata():
-    """Extract simulation metadata from uploaded topology and trajectory files.
-    This is where the tmpdir for the files is created.
+    """Extract simulation metadata from files already uploaded in chunks.
 
-    Expects a multipart POST with:
-        - ``topology``: a single topology file.
-        - ``trajectory[]``: one or more trajectory files.
+    Expects a form POST with ``workflow_id``, ``topology_name`` and one or
+    more ``trajectory_names[]`` (names returned by the chunked upload).
 
     Returns:
         JSON response:
         - ``{"simulation_metadata": ..., "message": "..."}``
     """
-    workflow_id = request.form.get("workflow_id")
-    topology = request.files.get("topology")
-    trajectories = request.files.getlist("trajectory[]")
+    topo_name = request.form.get("topology_name")
+    traj_names = request.form.getlist("trajectory_names[]")
 
-    if not topology or not trajectories:
+    if not topo_name or not traj_names:
         raise WebformError("Simulation files are missing!", status_code=404)
 
     try:
-        workflow = current_app.extensions["workflow_store"].reset(workflow_id)
+        workflow = current_app.extensions["workflow_store"].get(
+            request.form.get("workflow_id")
+        )
+        tmpdir = workflow.tmpdir
+        topo_path = resolve_uploaded_file(tmpdir, topo_name)
+        traj_file_paths = [resolve_uploaded_file(tmpdir, n) for n in traj_names]
     except WorkflowNotFound as exc:
         return jsonify({"Workflow error": str(exc)}), 400
-
-    tmpdir = workflow.tmpdir
-
-    topo_path, traj_file_paths = upload_files_to_server(tmpdir, topology, trajectories)
+    except UploadError as exc:
+        return jsonify({"error": str(exc)}), exc.status_code
 
     saved_files = {"topology": [topo_path], "trajectory": traj_file_paths}
     cache_extracted_files(tmpdir, saved_files)

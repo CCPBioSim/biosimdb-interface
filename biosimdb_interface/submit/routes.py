@@ -190,7 +190,7 @@ def do_submit():
             "You have already been invited to the BioSimDB community. "
             "Please check your email for the invitation and accept it "
             "to complete your submission. If you cannot find your invite, "
-            'please check "My dashboard > Requests" in BioSimDB.',
+            'please check "My dashboard > Requests" in PSDI data-collections.',
             "info",
         )
     if invite_status == INVITE_FAILED:

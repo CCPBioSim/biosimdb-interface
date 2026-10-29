@@ -1,6 +1,24 @@
-import io
 import os
 from unittest.mock import patch
+
+
+def chunk_upload(client, workflow_id, filename, content=b"fake"):
+    """Upload a file through the chunked endpoints; return its server name."""
+    init = client.post(
+        "/uploads/init",
+        json={"workflow_id": workflow_id, "filename": filename, "size": len(content)},
+    ).get_json()
+    for i in range(init["total_chunks"]):
+        start = i * init["chunk_size"]
+        client.put(
+            f"/uploads/{init['upload_id']}/chunks/{i}?workflow_id={workflow_id}",
+            data=content[start : start + init["chunk_size"]],
+        )
+    done = client.post(
+        f"/uploads/{init['upload_id']}/complete", json={"workflow_id": workflow_id}
+    )
+    return done.get_json()["filename"]
+
 
 # def test_extract_missing_files_returns_404(client):
 #     response = client.post("/extract_metadata", data={})
@@ -11,14 +29,13 @@ from unittest.mock import patch
 def test_extract_success(client):
     with patch("biosimdb_interface.extract.services.MetadataPopulator") as MockSP:
         MockSP.return_value.populate.return_value = {"engine": "GROMACS"}
+        wid = "11111111-1111-4111-8111-111111111111"
         data = {
-            "workflow_id": "11111111-1111-4111-8111-111111111111",
-            "topology": (io.BytesIO(b"fake"), "topol.gro"),
-            "trajectory[]": (io.BytesIO(b"fake"), "traj.xtc"),
+            "workflow_id": wid,
+            "topology_name": chunk_upload(client, wid, "topol.gro"),
+            "trajectory_names[]": [chunk_upload(client, wid, "traj.xtc")],
         }
-        response = client.post(
-            "/extract_metadata", data=data, content_type="multipart/form-data"
-        )
+        response = client.post("/extract_metadata", data=data)
         assert response.status_code == 200
         assert response.get_json()["simulation_metadata"] == {"engine": "GROMACS"}
 
@@ -48,10 +65,15 @@ def test_two_tabs_keep_separate_extraction_directories(client, app):
                 "/extract_metadata",
                 data={
                     "workflow_id": workflow_id,
-                    "topology": (io.BytesIO(b"topology"), f"{filename}.gro"),
-                    "trajectory[]": (io.BytesIO(b"trajectory"), f"{filename}.xtc"),
+                    "topology_name": chunk_upload(
+                        client, workflow_id, f"{filename}.gro", b"topology"
+                    ),
+                    "trajectory_names[]": [
+                        chunk_upload(
+                            client, workflow_id, f"{filename}.xtc", b"trajectory"
+                        )
+                    ],
                 },
-                content_type="multipart/form-data",
             )
 
         first_id = "11111111-1111-4111-8111-111111111111"

@@ -7,7 +7,7 @@ and loads environment variables for Invenio OAuth integration.
 
 import os
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 from dotenv import load_dotenv
 from flask import Flask

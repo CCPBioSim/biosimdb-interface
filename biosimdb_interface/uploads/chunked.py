@@ -66,17 +66,15 @@ class ChunkedUpload:
     def _create(self, name, size, chunk_size):
         """Preallocate the data file and persist metadata."""
         os.makedirs(self.staging, exist_ok=True)
-        fd = os.open(self.part_path, os.O_WRONLY | os.O_CREAT, 0o640)
         try:
-            if hasattr(os, "posix_fallocate"):
-                os.posix_fallocate(fd, 0, size)
-            else:
-                os.ftruncate(fd, size)
+            with open(self.part_path, "wb") as f:
+                if hasattr(os, "posix_fallocate"):
+                    os.posix_fallocate(f.fileno(), 0, size)
+                else:
+                    f.truncate(size)
         except OSError as exc:
             shutil.rmtree(self.staging, ignore_errors=True)
             raise UploadError("Not enough disk space on the server.", 507) from exc
-        finally:
-            os.close(fd)
 
         meta = {
             "name": name,
@@ -123,16 +121,16 @@ class ChunkedUpload:
             raise UploadError(f"Chunk must be exactly {expected} bytes.")
 
         written = 0
-        fd = os.open(self.part_path, os.O_WRONLY)
-        try:
+        # Own handle per request, so seek+write is safe across parallel chunks
+        # and portable (os.pwrite is unavailable on Windows).
+        with open(self.part_path, "r+b") as f:
+            f.seek(offset)
             while written < expected:
                 buf = stream.read(min(_READ_SIZE, expected - written))
                 if not buf:
                     break
-                os.pwrite(fd, buf, offset + written)
+                f.write(buf)
                 written += len(buf)
-        finally:
-            os.close(fd)
 
         if written != expected:
             raise UploadError("Incomplete chunk received.")

@@ -1,14 +1,61 @@
+# Set-up instructions
+
+# Permissions for mounted tmpdir
+# mkdir -p /tmp/scratch/tmp
+# sudo chown "$USER":staff /tmp/scratch/tmp
+# chmod 777 /tmp/scratch/tmp
+
+# Run
+# docker compose -f docker/docker-compose.yml up --build -d
+
+# http://localhost/biosimdb/ # for website
+# http://localhost:8080 # for traefik dashboard
+
+# docker compose -f docker/docker-compose.yml stop     # stop, keep containers
+
+# clean restart
+# docker compose -f docker/docker-compose.yml down     # stop and remove containers and network
+# docker compose -f docker/docker-compose.yml up --build
+
 services:
-  biosimdb-interface:
+  traefik:
+    image: traefik:v3.6
+    command:
+      - --log.level=DEBUG
+      - --accesslog=true
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      # - --entrypoints.web.transport.respondingTimeouts.readTimeout=60s
+      # - --entrypoints.web.transport.respondingTimeouts.writeTimeout=0s
+      # - --entrypoints.web.transport.respondingTimeouts.idleTimeout=180s
+      # - --serverstransport.forwardingtimeouts.dialtimeout=30s
+      # - --serverstransport.forwardingtimeouts.responseheadertimeout=0s
+    ports:
+      - "80:80"
+      - "8080:8080"   # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  biosimdb:
     build:
       context: ..
-      dockerfile: Dockerfile
-    ports:
-      - "5002:5002"
+      dockerfile: docker/Dockerfile
+    volumes:
+      - /tmp/scratch/tmp:/tmp/scratch
     env_file:
       - ../biosimdb_interface/.env
-    volumes:
-      # Mount schema files from host — avoids baking local paths into the image
-      - type: bind
-        source: ../../biosim-schema
-        target: /biosim-schema
+    environment:
+      PORT: "5002"
+      UPLOAD_FOLDER: /tmp/scratch   # keep in sync with the mount target
+      TMPDIR: /tmp/scratch
+      LOG_LEVEL: DEBUG
+    expose:
+      - "5002"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.biosimdb.rule=Host(`localhost`)
+      - traefik.http.routers.biosimdb.entrypoints=web
+      - traefik.http.services.biosimdb.loadbalancer.server.port=5002

@@ -15,7 +15,8 @@ def validate_with_mdanalysis(topology_path, trajectory_paths):
 
     Returns:
         None: If the topology and trajectories are valid.
-        str: An error message if the files cannot be read by MDAnalysis or if required paths are missing.
+        str: An error message if the files cannot be read by MDAnalysis or if required
+        paths are missing.
     """
     if not topology_path or not trajectory_paths:
         return (

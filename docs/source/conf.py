@@ -53,7 +53,6 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -61,8 +60,7 @@ html_theme = "ccpbiosim_sphinx_theme"
 html_context = {"github_repo": "biosimdb-interface"}
 html_static_path = ['_static']
 html_css_files = [
-    'styles.css',
+    "styles.css",
 ]
 
-import warnings
 warnings.filterwarnings("ignore", message="netCDF4 is not available")

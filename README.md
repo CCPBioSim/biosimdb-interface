@@ -12,6 +12,6 @@ A repository for extracting and uploading simulation data via a web interface to
 
 | Category       | Badges |
 |----------------|--------|
-| **Build**      | [![CI](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/biosimdb_interface_project-ci.yaml/badge.svg)](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/example_package_project-ci.yaml) |
-| **Documentation** | [![Docs – Status](https://app.readthedocs.org/projects/biosimdb-interface/badge/?version=latest)](https://biosimdb-interface.readthedocs.io/en/latest/) |
+| **Build**      | [![PR Checks](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/pr.yaml/badge.svg)](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/pr.yaml) [![Weekly Tests](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/weekly-tests.yaml/badge.svg)](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/weekly-tests.yaml) |
+| **Documentation** | [![Weekly Docs](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/weekly-docs.yaml/badge.svg)](https://github.com/CCPBioSim/biosimdb-interface/actions/workflows/weekly-docs.yaml) [![Docs – Status](https://app.readthedocs.org/projects/biosimdb-interface/badge/?version=latest)](https://biosimdb-interface.readthedocs.io/en/latest/) |
 | **Quality**    | [![Coverage Status](https://coveralls.io/repos/github/CCPBioSim/biosimdb-interface/badge.svg?branch=main)](https://coveralls.io/github/CCPBioSim/biosimdb-interface?branch=main) |

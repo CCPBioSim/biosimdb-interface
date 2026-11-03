@@ -46,9 +46,12 @@ def check(r, expected, what):
     if r.status_code == expected:
         return
     hint = {
-        401: "\n  The token was rejected - check it is correct and has not been revoked.",
+        401: (
+            "\n  The token was rejected - check it is correct and has not been revoked."
+        ),
         403: (
-            "\n  Permission denied - check your token is correct and not revoked, and that"
+            "\n  Permission denied - check your token is correct and not revoked, "
+            "and that"
             "\n  the draft is one you own or can edit."
         ),
         404: "\n  Not found - check the draft ID and that it is still a draft.",
@@ -77,7 +80,8 @@ def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
 
     progress = Progress(size)
     current_app.logger.info(
-        f"Uploading {key} ({size / 1e9:.2f} GB) in one PUT at {time.strftime('%H:%M:%S %Z')}"
+        f"Uploading {key} ({size / 1e9:.2f} GB) in one PUT at "
+        f"{time.strftime('%H:%M:%S %Z')}"
     )
     try:
         r = s.put(
@@ -101,7 +105,8 @@ def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
         )
         raise
     current_app.logger.info(
-        f"Server responded HTTP {r.status_code}, {progress.wait_time()} after the last byte was sent"
+        f"Server responded HTTP {r.status_code}, {progress.wait_time()} after the "
+        "last byte was sent"
     )
     current_app.logger.info(f"  x-request-id: {r.headers.get('x-request-id')}")
     check(r, 200, "File upload")
@@ -201,8 +206,9 @@ def upload_multipart(
 
     progress = Progress(size)
     current_app.logger.debug(
-        f"Uploading {key} ({size / 1e9:.2f} GB) as {parts} x {part_size / 2**20:.0f} MiB "
-        f"parts, {workers} at a time, at {time.strftime('%H:%M:%S %Z')}"
+        f"Uploading {key} ({size / 1e9:.2f} GB) as {parts} x "
+        f"{part_size / 2**20:.0f} MiB parts, {workers} at a time, at "
+        f"{time.strftime('%H:%M:%S %Z')}"
     )
     # Pre-signed URLs carry their own auth - don't send the Invenio token to S3.
     s3 = requests.Session()
@@ -237,7 +243,7 @@ def upload_multipart(
             raise RuntimeError(
                 f"Multipart init returned {len(part_links or [])} part links, "
                 f"expected {parts}"
-            )
+            ) from e
     current_app.logger.debug(f"All {parts} parts uploaded")
     return links["commit"]
 

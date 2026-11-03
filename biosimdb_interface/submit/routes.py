@@ -66,7 +66,8 @@ def resume_submit():
     )
     if not tmpdir or not pending_form_path or not os.path.isfile(pending_form_path):
         current_app.logger.exception(
-            f"No pending submission found: tmpdir {tmpdir}, pending_form_path {pending_form_path}"
+            f"No pending submission found: tmpdir {tmpdir}, "
+            f"pending_form_path {pending_form_path}"
         )
         flash("No pending submission found.", "warning")
         return redirect(url_for("webform.webform"))
@@ -189,7 +190,7 @@ def do_submit():
             "You have already been invited to the BioSimDB community. "
             "Please check your email for the invitation and accept it "
             "to complete your submission. If you cannot find your invite, "
-            'please check "My dashboard > Requests" in BioSimDB.',
+            'please check "My dashboard > Requests" in PSDI data-collections.',
             "info",
         )
     if invite_status == INVITE_FAILED:
@@ -229,10 +230,12 @@ def cancel_submit():
         session.pop(key, None)
     session["force_clear_client_state"] = True
     current_app.logger.info(
-        f"Workflow ID {request.args.get('workflow_id')} for submission to BioSimDB cancelled by user."
+        f"Workflow ID {request.args.get('workflow_id')} for submission to BioSimDB "
+        "cancelled by user."
     )
     flash(
-        "Submission to BioSimDB successfully cancelled. All data marked for clearance from server.",
+        "Submission to BioSimDB successfully cancelled. All data marked for "
+        "clearance from server.",
         "info",
     )
     return jsonify({"success": True})

@@ -1,5 +1,5 @@
 # Stage 1: Fetch Schema Artifacts
-FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944 AS schema-fetcher
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c AS schema-fetcher
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl jq tar ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
@@ -15,7 +15,7 @@ RUN TAG=$(curl -fsSL https://api.github.com/repos/CCPBioSim/biosim-schema/releas
 
 
 # Stage 2: Build Python dependencies
-FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944 AS builder
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -47,7 +47,7 @@ RUN pip install --no-cache-dir setuptools==84.2.1 gunicorn==26.2.0
 RUN pip install --no-cache-dir .
 
 # Stage 3: Runtime
-FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
 
 ARG PORT=5002
 

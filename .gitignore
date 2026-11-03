@@ -172,7 +172,7 @@ cython_debug/
 .pypirc
 
 # docs
-docs/source/apidoc/
+docs/source/reference/
 docs/build/
 
 #tests

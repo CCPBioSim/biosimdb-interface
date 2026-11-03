@@ -41,7 +41,6 @@ jobs:
     permissions:
       contents: read
     with:
-      pre-build-command: sphinx-apidoc --force -o docs/source/api_generated biosimdb_interface
       build-dir: build
       timeout-minutes: 15
 

@@ -9,8 +9,8 @@
 import importlib.metadata
 import warnings
 
-project = 'biosimdb-interface'
-copyright = '2026, CCPBioSim'
+project = "biosimdb-interface"
+copyright = "2026, CCPBioSim"
 release = importlib.metadata.version("biosimdb-interface")
 
 # -- General configuration ---------------------------------------------------
@@ -50,7 +50,7 @@ autodoc_typehints = "description"
 add_module_names = False
 python_maximum_signature_line_length = 88
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 
 
@@ -59,7 +59,7 @@ exclude_patterns = []
 
 html_theme = "ccpbiosim_sphinx_theme"
 html_context = {"github_repo": "biosimdb-interface"}
-html_static_path = ['_static']
+html_static_path = ["_static"]
 html_css_files = [
     "styles.css",
 ]

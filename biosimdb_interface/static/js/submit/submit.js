@@ -61,6 +61,9 @@ export function submitSimulation(button) {
         clearFormState();
         addHiddenInput(form, 'submit', '1');
         addHiddenInput(form, 'workflow_id', getWorkflowId());
+        // Disabled inputs aren't posted; files are already chunk-uploaded. Disable topology and trajectory files
+        form.querySelectorAll('input[name="topology"], input[name="trajectory[]"]')
+            .forEach(input => { input.disabled = true; });
         HTMLFormElement.prototype.submit.call(form);
     }).then(success => {
         if (!success) hideLoadingOverlay(button);

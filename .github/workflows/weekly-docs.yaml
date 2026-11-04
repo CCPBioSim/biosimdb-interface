@@ -19,7 +19,6 @@ jobs:
     permissions:
       contents: read
     with:
-      pre-build-command: sphinx-apidoc --force -o docs/source/api_generated biosimdb_interface
       build-dir: build
       os: '["ubuntu-26.04", "macos-26", "windows-2025-vs2026"]'
       python-versions: '["3.12", "3.13", "3.14"]'

@@ -59,7 +59,9 @@ def check(r, expected, what):
     raise Exception(f"{what} failed: HTTP {r.status_code}{hint}\n{r.text[:2000]}")
 
 
-def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
+def upload_single(
+    s, api, draft_id, path, key, size, cancelled=lambda: False, on_update=None
+):
     """Initialize and stream a file using a single content PUT.
 
     Args:
@@ -70,6 +72,7 @@ def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
         key (str): File key to create in the draft.
         size (int): File size in bytes.
         cancelled (Callable[[], bool]): Callback indicating cancellation.
+        on_update (Callable[[Progress], None] | None): Progress callback.
 
     Returns:
         str: File commit URL.
@@ -78,7 +81,7 @@ def upload_single(s, api, draft_id, path, key, size, cancelled=lambda: False):
     check(r, 201, "File init")
     links = next(e["links"] for e in r.json()["entries"] if e["key"] == key)
 
-    progress = Progress(size)
+    progress = Progress(size, on_update=on_update)
     current_app.logger.info(
         f"Uploading {key} ({size / 1e9:.2f} GB) in one PUT at "
         f"{time.strftime('%H:%M:%S %Z')}"
@@ -157,7 +160,16 @@ def put_part(s3, path, part, url, part_size, size, progress, cancelled):
 
 
 def upload_multipart(
-    s, api, draft_id, path, key, size, chunk_mb, workers, cancelled=lambda: False
+    s,
+    api,
+    draft_id,
+    path,
+    key,
+    size,
+    chunk_mb,
+    workers,
+    cancelled=lambda: False,
+    on_update=None,
 ):
     """Initialize multipart transfer, upload parts, and return the commit URL.
 
@@ -171,6 +183,7 @@ def upload_multipart(
         chunk_mb (int): Requested part size in MiB, subject to S3 limits.
         workers (int): Maximum number of concurrent part uploads.
         cancelled (Callable[[], bool]): Callback indicating cancellation.
+        on_update (Callable[[Progress], None] | None): Progress callback.
 
     Returns:
         str: File commit URL.
@@ -204,7 +217,7 @@ def upload_multipart(
         current_app.logger.error(message)
         raise RuntimeError(message)
 
-    progress = Progress(size)
+    progress = Progress(size, on_update=on_update)
     current_app.logger.debug(
         f"Uploading {key} ({size / 1e9:.2f} GB) as {parts} x "
         f"{part_size / 2**20:.0f} MiB parts, {workers} at a time, at "
@@ -248,7 +261,17 @@ def upload_multipart(
     return links["commit"]
 
 
-def upload_file(s, api, draft_id, path, key, size, chunk_mb, cancelled=lambda: False):
+def upload_file(
+    s,
+    api,
+    draft_id,
+    path,
+    key,
+    size,
+    chunk_mb,
+    cancelled=lambda: False,
+    on_update=None,
+):
     """Upload one file, using multipart transfer with a slow-upload fallback.
 
     Large files use multipart transfer. Smaller files also try multipart
@@ -263,13 +286,15 @@ def upload_file(s, api, draft_id, path, key, size, chunk_mb, cancelled=lambda: F
         size (int): File size in bytes.
         chunk_mb (int): Requested multipart part size in MiB.
         cancelled (Callable[[], bool]): Callback indicating cancellation.
+        on_update (Callable[[Progress], None] | None): Progress callback.
 
     Returns:
         str: File commit URL.
     """
+    extra = {"on_update": on_update} if on_update else {}
     if size > SINGLE_MAX:
         return upload_multipart(
-            s, api, draft_id, path, key, size, chunk_mb, 1, cancelled
+            s, api, draft_id, path, key, size, chunk_mb, 1, cancelled, **extra
         )
 
     deadline = time.monotonic() + SLOW_AFTER
@@ -282,7 +307,9 @@ def upload_file(s, api, draft_id, path, key, size, chunk_mb, cancelled=lambda: F
         return False
 
     try:
-        return upload_multipart(s, api, draft_id, path, key, size, chunk_mb, 1, stop)
+        return upload_multipart(
+            s, api, draft_id, path, key, size, chunk_mb, 1, stop, **extra
+        )
     except MultipartTooSlow:
         current_app.logger.info(
             f"Multipart for {key} exceeded {SLOW_AFTER}s; falling back to single PUT",
@@ -293,4 +320,4 @@ def upload_file(s, api, draft_id, path, key, size, chunk_mb, cancelled=lambda: F
             f"{api}/api/records/{draft_id}/draft/files/{quote(key, safe='')}",
             timeout=30,
         )
-        return upload_single(s, api, draft_id, path, key, size, cancelled)
+        return upload_single(s, api, draft_id, path, key, size, cancelled, **extra)

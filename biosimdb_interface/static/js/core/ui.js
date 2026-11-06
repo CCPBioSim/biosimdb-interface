@@ -43,8 +43,10 @@ export function escapeHtml(s) {
  * Shows a full-page wait overlay and puts a button into a disabled "working" state.
  * @param {HTMLElement} button - The button that triggered the action.
  * @param {string} loadingText - Text to show on the button while working.
+ * @param {boolean} [withSteps=false] - Show an empty panel for a stepper instead of a spinner.
+ * @returns {HTMLElement|null} The panel to render a stepper into when `withSteps` is true.
  */
-export function showLoadingOverlay(button, loadingText) {
+export function showLoadingOverlay(button, loadingText, withSteps = false) {
     button.dataset.originalText = button.textContent;
     button.disabled = true;
     button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>${loadingText}`;
@@ -52,8 +54,44 @@ export function showLoadingOverlay(button, loadingText) {
     const overlay = document.createElement('div');
     overlay.id = 'loading-overlay';
     overlay.style.cssText = 'position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.5);';
-    overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+    overlay.innerHTML = withSteps
+        ? '<div id="loading-steps" class="card shadow p-3" style="min-width:360px; max-width:600px;"></div>'
+        : '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
     document.body.appendChild(overlay);
+    return withSteps ? overlay.firstElementChild : null;
+}
+
+/**
+ * Render a list of progress steps into a container.
+ * @param {HTMLElement} container - Element to render into.
+ * @param {{id: string, label: string}[]} steps - Ordered steps.
+ * @returns {function(string, string, ?number, string=): void} update(id, state, fraction, detail)
+ *   where state is 'pending' | 'active' | 'done' | 'error'; fraction is 0-1 or null
+ *   for an indeterminate bar.
+ */
+export function createStepper(container, steps) {
+    container.innerHTML = steps.map(s => `
+        <div class="step mb-2 text-start" data-step="${escapeHtml(s.id)}">
+            <span class="icon me-2"></span><span class="label">${escapeHtml(s.label)}</span>
+            <div class="detail small text-muted ms-4"></div>
+            <div class="progress ms-4 mt-1 d-none" style="height:6px">
+                <div class="progress-bar"></div>
+            </div>
+        </div>`).join('');
+
+    const icons = { pending: '○', active: '⏳', done: '✅', error: '❌' };
+    return (id, state, fraction = null, detail = '') => {
+        const el = [...container.querySelectorAll('.step')].find(e => e.dataset.step === id);
+        if (!el) return;
+        el.classList.toggle('text-muted', state === 'pending');
+        el.querySelector('.icon').textContent = icons[state];
+        el.querySelector('.detail').textContent = state === 'active' ? detail : '';
+        el.querySelector('.progress').classList.toggle('d-none', state !== 'active');
+        const bar = el.querySelector('.progress-bar');
+        bar.classList.toggle('progress-bar-striped', fraction == null);
+        bar.classList.toggle('progress-bar-animated', fraction == null);
+        bar.style.width = fraction == null ? '100%' : `${Math.round(fraction * 100)}%`;
+    };
 }
 
 /**

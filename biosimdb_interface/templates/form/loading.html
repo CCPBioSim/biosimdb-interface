@@ -5,28 +5,61 @@
   Behaviour:
     - Submits to form.do_submit via fetch so it can be cancelled client-side.
     - On completion, navigates to the final response URL (success or webform).
+    - Polls submit.progress and shows each step (invite, draft, per-file upload,
+      review) with a progress bar and live detail.
     - Cancel aborts the fetch and resets session state via form.cancel_submit.
 #}
 {% extends "main/base.html" %}
 {% block content %}
 <div class="container text-center mt-5">
-    <div class="spinner-border text-primary mb-3" role="status"></div>
     <p class="text-muted">Submitting to BioSimDB, please wait...</p>
+    <div id="submit-steps" class="mx-auto" style="max-width:600px"></div>
     <button type="button" id="cancel-submit-btn" class="btn btn-outline-secondary mt-3">Cancel</button>
 </div>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
-<script>
+<script type="module">
+    import { createStepper } from "{{ url_for('static', filename='js/core/ui.js') }}";
+
     const controller = new AbortController();
     let cancelled = false;
+
+    const panel = document.getElementById('submit-steps');
+    let update = null;
+    let renderedKey = '';
+
+    async function poll() {
+        try {
+            const r = await fetch("{{ url_for('submit.progress', workflow_id=workflow_id) }}");
+            if (!r.ok) return;
+            const p = await r.json();
+            const steps = p.steps && p.steps.length
+                ? p.steps
+                : [{ id: 'invite', label: 'Checking community membership' }];
+            const key = steps.map(s => s.id).join('|');
+            if (key !== renderedKey) {
+                renderedKey = key;
+                update = createStepper(panel, steps);
+            }
+            const cur = steps.findIndex(s => s.id === (p.current || 'invite'));
+            steps.forEach((s, i) => {
+                if (i < cur) update(s.id, 'done');
+                else if (i === cur) update(s.id, 'active', p.pct, p.detail);
+                else update(s.id, 'pending');
+            });
+        } catch (e) { /* transient; next poll retries */ }
+    }
+    poll();
+    const timer = setInterval(poll, 1000);
 
     fetch("{{ url_for('submit.do_submit', workflow_id=workflow_id) }}", {
         method: "POST",
         signal: controller.signal,
     })
     .then(async response => {
+        clearInterval(timer);
         if (cancelled) return;
         // fetch has already followed the redirect and rendered the target page,
         // consuming any flashed messages. Show that response instead of
@@ -38,12 +71,14 @@
         document.close();
     })
     .catch(err => {
+        clearInterval(timer);
         if (err.name === 'AbortError') return; // handled by cancel button
         window.location.replace("{{ url_for('webform.webform') }}");
     });
 
     document.getElementById('cancel-submit-btn').addEventListener('click', () => {
         cancelled = true;
+        clearInterval(timer);
         controller.abort();
         fetch("{{ url_for('submit.cancel_submit', workflow_id=workflow_id) }}", { method: 'POST' })
             .finally(() => window.location.replace("{{ url_for('webform.webform') }}"));

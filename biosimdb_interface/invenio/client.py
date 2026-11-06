@@ -16,7 +16,13 @@ PART_SIZE = 100  # 100 MiB; S3 requires parts of at least 5 MiB
 
 
 def run_record_upload(
-    api_url, api_key, metadata_path, files, community, cancelled=lambda: False
+    api_url,
+    api_key,
+    metadata_path,
+    files,
+    community,
+    cancelled=lambda: False,
+    report=None,
 ):
     """Create a draft, upload its files, and submit it to a community.
 
@@ -33,6 +39,8 @@ def run_record_upload(
         community (str): Community identifier to submit the draft to.
         cancelled (Callable[[], bool]): Callback that returns ``True`` when
             the upload should be cancelled.
+        report (Callable | None): Called as ``report(step, pct, detail)``
+            with steps ``draft``, ``file:<name>`` and ``review``.
 
     Returns:
         tuple: ``(None, draft_id)`` for the created record.
@@ -51,6 +59,8 @@ def run_record_upload(
     with Path(metadata_path).open("r", encoding="utf8") as file:
         data = json.load(file)
 
+    report = report or (lambda *args, **kwargs: None)
+    report("draft", None, "Creating draft record")
     r = s.post(f"{api}/api/records", json=data)
     r.raise_for_status()
     draft_id = r.json()["id"]
@@ -60,6 +70,8 @@ def run_record_upload(
             if cancelled():
                 raise UploadCancelled
             path = Path(file)
+            step = f"file:{path.name}"
+            report(step, 0, "Starting transfer")
             commit_url = upload_file(
                 s,
                 api,
@@ -69,12 +81,17 @@ def run_record_upload(
                 path.stat().st_size,
                 PART_SIZE,
                 cancelled=cancelled,
+                on_update=lambda p, step=step: report(
+                    step, p.sent / p.size if p.size else 1, p.status()
+                ),
             )
+            report(step, 1, "Finalising file")
             r = s.post(commit_url)
             r.raise_for_status()
 
         if cancelled():
             raise UploadCancelled
+        report("review", None, "Submitting to the BioSimDB community")
         r = s.get(f"{api}/api/communities/{community}")
         r.raise_for_status()
         r = s.put(

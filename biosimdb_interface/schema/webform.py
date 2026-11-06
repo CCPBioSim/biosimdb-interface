@@ -59,10 +59,12 @@ WEBFORM_SCHEMA = {
             {
                 "label": "Please note:",
                 "options": [
-                    "Further <b>instructions</b> for using this weform are available "
+                    "<b>Instructions</b> for using this deposition form are available "
                     "<a "
                     'href="https://biosimdb-interface.readthedocs.io/en/latest/biosimdb_intro.html"'
                     ' target="_blank" class="text-reset"> here</a>',
+                    "Sessions are lost if the browser tab is closed.",
+                    "If your files are larger than 100~GB, please contact us first.",
                     "This deposition form is in active development, with new features "
                     "being added, there may be a few bugs &#128030; that have crept "
                     "in!",

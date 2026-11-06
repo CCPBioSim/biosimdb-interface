@@ -1,9 +1,10 @@
 /** Uploads files to the server in parallel, resumable chunks. */
 export class ChunkedUploader {
-    constructor(workflowId, { concurrency = 4, retries = 4 } = {}) {
+    constructor(workflowId, { concurrency = 4, retries = 4, signal } = {}) {
         this.workflowId = workflowId;
         this.concurrency = concurrency;
         this.retries = retries;
+        this.signal = signal;
         this.base = `${window.APPLICATION_BASE}/uploads`;
     }
 
@@ -13,6 +14,7 @@ export class ChunkedUploader {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ workflow_id: this.workflowId, ...payload }),
+            signal: this.signal,
         });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'Upload failed.');
@@ -32,13 +34,14 @@ export class ChunkedUploader {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/octet-stream' },
                     body,
+                    signal: this.signal,
                 });
                 if (r.ok) return;
                 if (r.status < 500) {
                     throw Object.assign(new Error((await r.json()).error), { fatal: true });
                 }
             } catch (err) {
-                if (err.fatal || attempt >= this.retries) throw err;
+                if (err.fatal || err.name === 'AbortError' || attempt >= this.retries) throw err;
             }
             await new Promise(res => setTimeout(res, 500 * 2 ** attempt));
         }

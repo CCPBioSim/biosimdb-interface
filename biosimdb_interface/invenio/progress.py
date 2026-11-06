@@ -14,12 +14,14 @@ from biosimdb_interface.core.cancellation import UploadCancelled
 class Progress:
     """Thread-safe byte counter that logs progress at most every `every` seconds."""
 
-    def __init__(self, size, every=30):
+    def __init__(self, size, every=30, on_update=None):
         """Initialize a progress counter.
 
         Args:
             size (int): Total upload size in bytes.
             every (int): Minimum seconds between progress log updates.
+            on_update (Callable[[Progress], None] | None): Called after each
+                ``add``, e.g. to report progress to the UI.
         """
         self.size = size
         self.sent = 0
@@ -27,6 +29,7 @@ class Progress:
         self.every = every
         self.last_log = self.start
         self.done_at = None
+        self.on_update = on_update
         self.lock = threading.Lock()
 
     def add(self, n):
@@ -38,6 +41,8 @@ class Progress:
                 self.done_at = now
             if now - self.last_log >= self.every or self.sent >= self.size:
                 self.last_log = now
+        if self.on_update:
+            self.on_update(self)
 
     def status(self):
         """Return a human-readable summary of bytes, percentage, elapsed time, and rate.

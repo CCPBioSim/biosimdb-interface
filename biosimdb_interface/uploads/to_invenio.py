@@ -52,7 +52,9 @@ def _load_pending_upload_paths(tmpdir):
     return files
 
 
-def _data_collections_upload(metadata_path, files_path, cancelled=lambda: False):
+def _data_collections_upload(
+    metadata_path, files_path, cancelled=lambda: False, report=None
+):
     """Upload metadata as a draft PSDI data-collections record.
 
     Args:
@@ -71,6 +73,7 @@ def _data_collections_upload(metadata_path, files_path, cancelled=lambda: False)
         files=files_path,
         community="biosimdb",
         cancelled=cancelled,
+        report=report,
     )
 
 
@@ -91,12 +94,13 @@ def _fill_invenio_metadata(form_data):
     return invenio_data
 
 
-def prepare_for_invenio(sim_metadata, tmpdir):
+def prepare_for_invenio(sim_metadata, tmpdir, reporter=None):
     """Create Invenio metadata and upload allow listed files from tmpdir.
 
     Args:
     form_data (ImmutableMultiDict | Mapping): Submitted webform payload.
     tmpdir (str): Temporary directory containing pending files and manifests.
+    reporter (ProgressReporter | None): Receives step list and progress.
 
     Returns:
     draft_id (str): Created Invenio draft record ID.
@@ -111,7 +115,23 @@ def prepare_for_invenio(sim_metadata, tmpdir):
         json.dump(invenio_data, f, indent=2)
 
     file_paths = _load_pending_upload_paths(tmpdir)
+    if reporter:
+        reporter.set_steps(
+            [{"id": "invite", "label": "Checking community membership"}]
+            + [{"id": "draft", "label": "Creating draft record"}]
+            + [
+                {
+                    "id": f"file:{os.path.basename(p)}",
+                    "label": f"Uploading {os.path.basename(p)}",
+                }
+                for p in file_paths
+            ]
+            + [{"id": "review", "label": "Submitting draft to BioSimDB"}]
+        )
     draft_id = _data_collections_upload(
-        metadata_path, file_paths, cancelled=lambda: is_submission_cancelled(tmpdir)
+        metadata_path,
+        file_paths,
+        cancelled=lambda: is_submission_cancelled(tmpdir),
+        report=reporter.update if reporter else None,
     )
     return draft_id

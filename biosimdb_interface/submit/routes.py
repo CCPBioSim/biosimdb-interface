@@ -34,6 +34,7 @@ from ..core.cancellation import (
     is_submission_cancelled,
     mark_submission_cancelled,
 )
+from ..core.progress_state import ProgressReporter, read_progress
 from ..core.workflows import WorkflowNotFound, get_workflow
 from ..uploads.to_invenio import prepare_for_invenio
 from ..uploads.utils import SIM_METADATA_FILENAME
@@ -120,8 +121,10 @@ def do_submit():
 
     try:
         token = session.get("access_token")
+        reporter = ProgressReporter(tmpdir)
+        reporter.update("invite", None, "Checking BioSimDB community membership")
         invite_status = invite_user("biosimdb", token)
-        draft_id = prepare_for_invenio(sim_metadata, tmpdir)
+        draft_id = prepare_for_invenio(sim_metadata, tmpdir, reporter)
 
         if not draft_id:
             current_app.logger.error("No draft ID was created, upload failed")
@@ -200,6 +203,21 @@ def do_submit():
             "warning",
         )
     return redirect(url_for("submit.submit_success"))
+
+
+@submit_bp.route("/progress")
+def progress():
+    """Return the current submission progress for polling by the loading page.
+
+    Returns:
+        Response: JSON with ``steps``, ``current``, ``pct`` and ``detail``, or
+        JSON 400 response if the workflow ID cannot be resolved.
+    """
+    try:
+        workflow = get_workflow()
+    except WorkflowNotFound as exc:
+        return jsonify({"validation_errors": [str(exc)]}), 400
+    return jsonify(read_progress(workflow.tmpdir or os.devnull))
 
 
 @submit_bp.route("/cancel_submit", methods=["POST"])

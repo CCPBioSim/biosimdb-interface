@@ -11,7 +11,7 @@ import warnings
 
 project = "biosimdb-interface"
 copyright = "2026, CCPBioSim"
-release = importlib.metadata.version("biosimdb-interface")
+release = '2.2.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

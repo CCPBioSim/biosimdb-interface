@@ -19,7 +19,7 @@
 
 services:
   traefik:
-    image: traefik:v3.7@sha256:a6c0194dda77bcb804824580f36fa7edc56e315b1acfe933366c8b52844a78a4
+    image: traefik:v3.7@sha256:8301d6f60957a422f98918aacf2b01482abde3e74ead3719aabdb7c64045fe28
     command:
       - --log.level=DEBUG
       - --accesslog=true
